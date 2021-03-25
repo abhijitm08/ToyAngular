@@ -7,3 +7,5 @@ BinningSchemes/log/
 BinningSchemes/slurm_scripts/
 
 BinningSchemes/Scheme*
+
+*.root

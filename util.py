@@ -810,6 +810,7 @@ class LbToLclNu_Model:
         dynm_SM     = self.get_dynamic_term(obsv)
         np_indp_dynm= self.get_freeparams_indp_weights(obsv, dynm_SM)
         np.save(fname, np_indp_dynm)
+        return np_indp_dynm
 
     def set_params_values(self, res, isfitresult = True):
         """Set the parameters values to the ones given in the dictionary"""
@@ -845,7 +846,7 @@ class LbToLclNu_Model:
                          res_fname = fitdir+'/responsematrix_eff/responsematrix.p'):
         """Define the binned model using the cached integrals"""
         #Get free parameter independent (nterms x nbins) matrix
-        k_fname   = fitdir+'/BinningSchemes/'+bin_scheme+'/keys1.p'
+        k_fname   = fitdir+'/BinningSchemes/'+bin_scheme+'/keys0.p'
         k_fpdinp  = pickle.load(open(k_fname, 'rb')) #288 keys to map integral value with freeparams (wc,ff)
         print('Number of keys for the free parameter independent integrals', len(k_fpdinp))
         BinScheme = defing_binning_scheme()
@@ -882,6 +883,7 @@ class LbToLclNu_Model:
             mijkl    = atfi.const(pickle.load( open( res_fname, 'rb' ))) 
 
         #make a function to be returned
+        @atfi.function
         def _binned_model():
             #build the model with free parameters included
             free_params  = self.get_freeparams()
@@ -936,10 +938,10 @@ class LbToLclNu_Model:
     def import_unbinned_data(self, fname = './test.root'):
         df = read_root(fname, columns=['q2', 'w_ctheta_l'])
         np_df = df.to_numpy()
-        print(np_df)
+        #print(np_df)
         return np_df
 
-    def generate_unbinned_data(self, size, seed = None, chunks = 1000000, storefile = False, fname = './test.root'):
+    def generate_unbinned_data(self, size, seed = None, chunks = 1000000, store_file = False, fname = './test.root'):
         """Generate unbinned data"""
         if seed is not None:
             atfi.set_seed(seed)
@@ -949,10 +951,10 @@ class LbToLclNu_Model:
         print("Maximum = ", maximum)
         sample  = tft.run_toymc(self.get_unbinned_model, self.phase_space, size, maximum, chunk=chunks)
         print('Sample shape', sample.shape)
-        if storefile:
+        if store_file:
             dt  = self.prepare_data(sample)
             df  = pd.DataFrame.from_dict(dt)
-            print(df)
+            #print(df)
             to_root(df, fname, key='tree', store_index=False)
 
         return sample
@@ -963,10 +965,14 @@ class LbToLclNu_Model:
         b_data = (pois.sample(1, seed=seed)[0,:]).numpy()
         return b_data
 
-    def generate_binned_data_alternate(self, size, bin_scheme, seed = None, chunks = 1000000):
+    def generate_binned_data_alternate(self, size, bin_scheme, seed = None, chunks = 1000000, store_file = False, fname = './test.root', import_file = False):
         """Generate binned data, two methods available: binned_1 (from unbinned to binned) and binned_2 (binned directly)"""
 
-        sample = self.generate_unbinned_data(size, seed = seed, chunks = chunks)
+        if import_file:
+            sample = self.import_unbinned_data(fname = fname)
+        else:
+            sample = self.generate_unbinned_data(size, seed = seed, chunks = chunks, store_file = store_file, fname = fname)
+            
         BinScheme = defing_binning_scheme()
         xedges = BinScheme[bin_scheme]['qsq']
         yedges = BinScheme[bin_scheme]['cthl']
@@ -995,6 +1001,7 @@ class LbToLclNu_Model:
         if gauss_constraint_ff:
             nll_gaus_func =  self.gaussian_constraint_ffparams()  #Ltot = L * Lg => NLLtot = NLL - LogLg
 
+        @atfi.function
         def _nll(pars): 
             mu_i  = n_tot * model_binned()
             mu_tot= atfi.reduce_sum(mu_i) #equal to n_tot here
@@ -1008,10 +1015,10 @@ class LbToLclNu_Model:
         """plot the results of fit along with pull"""
         np_data =  np_data.flatten()
         np_fit  =  np_fit.flatten()
-        print(np_data.shape)
-        print(np_fit.shape)
+        #print(np_data.shape)
+        #print(np_fit.shape)
     
-        print(np_fit.sum())
+        #print(np_fit.sum())
         np_fit = np_data.sum()/np_fit.sum() * np_fit #np_data unnormalised
 
         from ROOT import TFile, TTree, TH1D, TH2D, gROOT, gStyle, TCanvas, kGreen, kRed, TCut, TPaveText, TLegend, kBlue, gPad
@@ -1066,21 +1073,29 @@ class LbToLclNu_Model:
 
     def write_fit_results(self, results, filename):
         f = open(filename, "w")
-        for p in self.ff_floated + self.wc_floated:
-            if p.name not in results["params"]:
-                continue
+        floated_params = None
+        if (self.ff_floated is None) and (self.wc_floated is not None):
+            floated_params = self.wc_floated
+        elif (self.ff_floated is not None) and (self.wc_floated is None):
+            floated_params = self.ff_floated
+        else:
+            raise Exception("Nothing is floated, please check!")
+
+        for p in floated_params:
             s = "%s " % p.name
             for i in results["params"][p.name]:
                 s += "%f " % i
+
             f.write(s + "\n")
-        s = "loglh %f"                   % (results["loglh"])
+
+        s = "loglh %f\n"                   % (results["loglh"])
         #see here to understand what below mean: https://iminuit.readthedocs.io/en/stable/reference.html
         #is_valid == (has_valid_parameters & !has_reached_call_limit & !is_above_max_edm)
-        s = "is_valid %i"                % (results["is_valid"])
-        s = "has_parameters_at_limit %i" % (results["has_parameters_at_limit"])
-        s = "has_accurate_covar %i"      % (results["has_accurate_covar"])
-        s = "has_posdef_covar %i"        % (results["has_posdef_covar"])
-        s = "has_made_posdef_covar %i"   % (results["has_made_posdef_covar"])
+        s+= "is_valid %i\n"                % (results["is_valid"])
+        s+= "has_parameters_at_limit %i\n" % (results["has_parameters_at_limit"])
+        s+= "has_accurate_covar %i\n"      % (results["has_accurate_covar"])
+        s+= "has_posdef_covar %i\n"        % (results["has_posdef_covar"])
+        s+= "has_made_posdef_covar %i"   % (results["has_made_posdef_covar"])
         f.write(s + "\n")
         f.close()
 
@@ -1318,6 +1333,7 @@ class Old_Model():
         dG_dq2_dcosthl =  N * (A1 + self.Mlep**2/q2 * (AV2 + AT2) + 2. * A3 + 4. * self.Mlep/atfi.sqrt(q2) * A4 + A5)
         return dG_dq2_dcosthl
 
+    @atfi.function
     def GetFormFactors(self, q2, params):
         #define delataf
         Deltaf = {}
@@ -1408,7 +1424,7 @@ class Old_Model():
 #md.randomise_ff_params()
 #md.randomise_wc_params()
 
-#md.generate_unbinned_data(100000, storefile = True, fname = './test.root')
+#md.generate_unbinned_data(100000, store_file = True, fname = './test.root')
 #md.import_unbinned_data(fname = './test.root')
 
 #md.generate_binned_data_alternate(1000, 'Scheme0')

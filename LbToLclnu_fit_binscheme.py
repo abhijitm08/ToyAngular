@@ -30,11 +30,17 @@ def main():
     #print(b_model())
     
     #Generate a binned data
-    #method1: Use "binned" pdf where each bin entry is sampled from a poisson distribution
-    b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
-    ##method2: Use "unbinned" pdf to generate data (using accept-reject method) and then bin it.
-    #b_data  = model.generate_binned_data_alternate(7.5e6, bscheme, seed = seed) #
-    #print(b_data)
+    ##method1: Use "binned" pdf where each bin entry is sampled from a poisson distribution
+    #b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
+    #method2: Use "unbinned" pdf to generate data (using accept-reject method) and then bin it.
+    #NB: For investigating binning schemes we will be fitting the same sample with different schemes so generate one sample and store it
+    sample_fname  = direc+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
+    if os.path.isfile(sample_fname):
+        print('Importing the file', sample_fname)
+        b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
+    else:
+        print('Making a new file', sample_fname)
+        b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = False, store_file = True, fname = sample_fname) #
 
     #Define the negative log-likilihood with/without the gaussian constrain on the floated form factors. 
     #Actually it returns a function that takes dictionary of parameters as input (a requirement by TFA2 package).
@@ -42,15 +48,16 @@ def main():
     tot_params = model.tot_params #get both fixed and floated parameter dictionary
     print('NLL', nll(tot_params)) #print the nll value of the model given the binned data with the parameters with which the model was created
 
-    ##For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
-    ##This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
-    #reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False)
-    ##pprint.pprint(reslts)
+    #For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
+    #This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
+    reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False)
+    #pprint.pprint(reslts)
+
     ##write the fit results to a text file
     resname = 'results_'+floatWC+'_'+str(seed)+'_'+bscheme+'_'+str(nevnts)+'_'+'_'.join(floated_FF)+'_'+suffix
     resfname = direc+resname+'.txt'
-    #print('resfname', resfname)
-    #model.write_fit_results(reslts, resfname)
+    print('resfname', resfname)
+    model.write_fit_results(reslts, resfname)
 
     #plot the fit results
     plotfname = direc+resname+'.pdf'
@@ -60,12 +67,12 @@ def main():
     end = time.time(); print('Time taken in min', (end - start)/60.)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Arguments for LbToLclnu_fit.py')
+    parser = argparse.ArgumentParser(description='Arguments for LbToLclnu_fit_bscheme.py')
     #required aguments
     parser.add_argument('-f', '--floatWC'   , dest='floatWC',type=str, required=True, help='(string) Name of the Wilson coefficient (WC) to be floated. Available options are [CVR,CSR,CSL,CT].')
     parser.add_argument('-s', '--seed'      , dest='seed'   ,type=int, required=True, help='(int) Seed for generation of fake/toy data. This should be different for each toy.')
     #optional arguments
-    parser.add_argument('-b', '--bscheme'   , dest='bscheme',type=str, default='Scheme0',help='(string) Binning scheme to be used. Available options are [Scheme0,Scheme2,Scheme3,Scheme4,Scheme5,Scheme6] and default is Scheme0.')
+    parser.add_argument('-b', '--bscheme'   , dest='bscheme',type=str, default='Scheme0',help='(string) Binning scheme to be used. Available options are [Scheme0,Scheme1,Scheme2,Scheme3,Scheme4,Scheme5,Scheme6] and default is Scheme0.')
     parser.add_argument('-n', '--nevnts'    , dest='nevnts' ,type=int, default=int(7.5e6),help='(int) Size of the toy sample. Default is 7.5M events.')
     parser.add_argument('-nf','--nfits'     , dest='nfits'  ,type=int, default=1,help='(int) Number of fits to conduct to a given sample. Default in 1.')
     parser.add_argument('-sf','--suffix'    , dest='suffix' ,type=str, default='toy',help="(int) A unique suffix added to the name of the fit result file (*_suffix.txt) and plot file (*_suffix.pdf). Default is 'toy'.")

@@ -34,16 +34,16 @@ Here we assume that $`\epsilon(\vec{x}_T)`$  and $`R(\vec{x}_R,\vec{x}_T)`$ are 
 The code to run the fit takes the following arguments
 
 ```python
-python LbToLclnu_fit.py -h 
+python LbToLclnu_fit_bscheme.py -h 
 ```
 
 ```
-usage: LbToLclnu_fit.py [-h] -f FLOATWC -s SEED [-b BSCHEME] [-n NEVNTS]
+usage: LbToLclnu_fit_bscheme.py [-h] -f FLOATWC -s SEED [-b BSCHEME] [-n NEVNTS]
                         [-nf NFITS] [-sf SUFFIX] [-d DIREC] [-p PLOTRES]
                         [-effn EFFN] [-effp EFFPATH] [-resn RESN]
                         [-resp RESPATH] [-e FLOATED_FF [FLOATED_FF ...]]
 
-Arguments for LbToLclnu_fit.py
+Arguments for LbToLclnu_fit_bscheme.py
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -102,25 +102,28 @@ optional arguments:
 Example 1
 
 ```python
-python LbToLclnu_fit.py --floatWC CVR --seed 2
+python LbToLclnu_fit_bscheme.py --floatWC CVR --seed 2 -b Scheme1
 ```
 
 Options 'floatwc' and 'seed' are REQUIRED. All others are optional and if not provided will be set to the default values. 
-The above example will float ``CVR`` in the fit and set the seed of generation of the toy to '2'. Each toy should have different seed. 
+The above example will float ``CVR`` in the fit, set the seed of generation of the toy to '2' and uses the ``Scheme1`` as the binning scheme. 
+By default ``Scheme0`` is used, all binning schemes are defined in ``BinningSchemes/Binning_Scheme.py``.
 
 Example 2
 
 ```python
-python LbToLclnu_fit.py -f CVR -s 2 -e a0f0 a1fplus
+python LbToLclnu_fit_bscheme.py -f CVR -s 2 -e a0f0 a1fplus -b Scheme1
 ```
 
 Note in this example that you can use either '--floatwc' or '-f' to specify the floated wilson coefficient.
-The above example will float ``CVR`` in the fit, set the seed to 2 and float ``a0f0`` and ``a1fplus`` form parameters along with ``CVR``. The other options are set to the default ones. 
+The above example will float ``CVR`` in the fit, set the seed to 2 and float ``a0f0`` and ``a1fplus`` form parameters along with ``CVR`` 
+and uses binning scheme ``Scheme1``.
+The other options are set to the default ones. 
 
 Example 3 
 
 ```python
-python LbToLclnu_fit.py -f CVR -s 2 -e a0f0 a1fplus -d ./plots/ -sf toy -effn False -resn True -p False
+python LbToLclnu_fit_bscheme.py -f CVR -s 2 -e a0f0 a1fplus -d ./plots/ -sf toy -effn True -resn True -p False
 ```
 The above example will 
 - float ``CVR`` in the fit.
@@ -128,7 +131,7 @@ The above example will
 - float ``a0f0`` and ``a1fplus`` form parameters along with ``CVR``, 
 - write the results of the fit to the directory 'plots' from your current work directory. 
 - add a suffix 'toy' to the file names that will be written to 'plots' directory.
-- does not apply efficiency information to the model.
+- apply efficiency information to the model.
 - applies resolution information to the model.
 - does not plot the fit results but only writes the text file containing fit parameters. 
 
