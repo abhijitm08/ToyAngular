@@ -3,7 +3,7 @@
 Repository created for Bachelor's project at Zurich. 
 This project is ported from gitlab https://gitlab.cern.ch/amathad/toyangular. 
 It contains code to run toy fits to the phase space of $`\Lambda_b \rightarrow \Lambda_c \mu \nu`$ decays to optimise the binning scheme.
-
+ 
 # Model
 
 The mathematical expression for the probability density function of our model is given by 
