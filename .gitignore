@@ -2,10 +2,7 @@
 __pycache__
 plots/*.pdf
 plots/*.txt
-BinningSchemes/Scheme0/
 BinningSchemes/log/
 BinningSchemes/slurm_scripts/
-
-#BinningSchemes/Scheme*
 
 *.root
