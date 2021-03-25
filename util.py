@@ -1078,6 +1078,8 @@ class LbToLclNu_Model:
             floated_params = self.wc_floated
         elif (self.ff_floated is not None) and (self.wc_floated is None):
             floated_params = self.ff_floated
+        elif (self.ff_floated is not None) and (self.wc_floated is not None):
+            floated_params = self.ff_floated + self.wc_floated
         else:
             raise Exception("Nothing is floated, please check!")
 
