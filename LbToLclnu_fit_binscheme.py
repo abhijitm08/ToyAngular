@@ -34,7 +34,12 @@ def main():
     #b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
     #method2: Use "unbinned" pdf to generate data (using accept-reject method) and then bin it.
     #NB: For investigating binning schemes we will be fitting the same sample with different schemes so generate one sample and store it
-    sample_fname  = direc+'toyrootfiles/toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
+    rootfiledir   = direc+'toyrootfiles/'
+    sample_fname  = rootfiledir+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
+    if not os.path.exists(rootfiledir):
+        print('Making directory ', direc+'toyrootfiles')
+        os.system('mkdir '+direc+'toyrootfiles')
+
     if os.path.isfile(sample_fname):
         print('Importing the file', sample_fname)
         b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
