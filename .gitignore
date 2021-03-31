@@ -6,3 +6,6 @@ BinningSchemes/log/
 BinningSchemes/slurm_scripts/
 
 *.root
+
+plots/toyrootfiles
+toyrootfiles
