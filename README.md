@@ -39,10 +39,12 @@ python LbToLclnu_fit_bscheme.py -h
 ```
 
 ```
-usage: LbToLclnu_fit_bscheme.py [-h] -f FLOATWC -s SEED [-b BSCHEME] [-n NEVNTS]
-                        [-nf NFITS] [-sf SUFFIX] [-d DIREC] [-p PLOTRES]
-                        [-effn EFFN] [-effp EFFPATH] [-resn RESN]
-                        [-resp RESPATH] [-e FLOATED_FF [FLOATED_FF ...]]
+usage: LbToLclnu_fit_binscheme.py [-h] -f FLOATWC -s SEED [-b BSCHEME]
+                                  [-n NEVNTS] [-nf NFITS] [-sf SUFFIX]
+                                  [-d DIREC] [-p PLOTRES] [-effn EFFN]
+                                  [-effp EFFPATH] [-resn RESN] [-resp RESPATH]
+                                  [-e FLOATED_FF [FLOATED_FF ...]]
+                                  [-inter CPUINTER] [-intra CPUINTRA]
 
 Arguments for LbToLclnu_fit_bscheme.py
 
@@ -55,8 +57,8 @@ optional arguments:
                         should be different for each toy.
   -b BSCHEME, --bscheme BSCHEME
                         (string) Binning scheme to be used. Available options
-                        are [Scheme0,Scheme2,Scheme3,Scheme4,Scheme5,Scheme6]
-                        and default is Scheme0.
+                        are [Scheme0,Scheme1,Scheme2,Scheme3,Scheme4,Scheme5,S
+                        cheme6] and default is Scheme0.
   -n NEVNTS, --nevnts NEVNTS
                         (int) Size of the toy sample. Default is 7.5M events.
   -nf NFITS, --nfits NFITS
@@ -96,6 +98,13 @@ optional arguments:
                         'floatWC': In addition to the 11 FF, we can float 7
                         more which are a0hplus a0hperp a0htildeplus a1hplus
                         a1hperp a1htildeplus a1htildeperp
+  -inter CPUINTER, --cpuinter CPUINTER
+                        (int) Number of cores to use for TensorFlow for INTER
+                        operations. Default is 1 core.
+  -intra CPUINTRA, --cpuintra CPUINTRA
+                        (int) Number of cores to use for TensorFlow for INTRA
+                        operations (matrix multiplication, etc). Default is 1
+                        core.
 ```
 
 ###  Examples for running fitting code  ###
