@@ -143,10 +143,10 @@ class LbToLclNu_Model:
             print('All form factors parameters are fixed!')
         elif ff_floated_names[0] == 'All':
             print('All form factors parameters related to the WC are floated!')
-            if 'CT' in self.wc_floated_names:
-                self.fix_or_float_params(self.map_wc_ff['SM'] + self.map_wc_ff['CT'])
-            else:
-                self.fix_or_float_params(self.map_wc_ff['SM'])
+            self.fix_or_float_params(self.map_wc_ff['SM'])
+            if self.wc_floated_names is not None:
+                if 'CT' in self.wc_floated_names:
+                    self.fix_or_float_params(self.map_wc_ff['CT'])
 
             self.ff_floated = [p for p in list(self.ff_params.values()) if p.floating()]
             self.ff_floated_names = [p.name for p in self.ff_floated]
@@ -173,12 +173,12 @@ class LbToLclNu_Model:
         """Make FF parameters"""
         #make dictionary of ff params
         ffact = {}
-        print('Setting FF to LQCD central value and allowed to vary b/w [lqcd_val - 10 * lqcd_sigma, lqcd_val + 10 * lqcd_sigma]. So this corresponds to...')
+        print('Setting FF to LQCD central value and allowed to vary b/w [lqcd_val - 20 * lqcd_sigma, lqcd_val + 20 * lqcd_sigma]. So this corresponds to...')
         for FF in self.FFs[:-2]: 
             ff_mn  = self.ff_mean[FF]
             ff_sg  = np.sqrt(self.ff_cov[FF][FF])
-            ff_l   = ff_mn - 10.*ff_sg
-            ff_h   = ff_mn + 10.*ff_sg
+            ff_l   = ff_mn - 20.*ff_sg
+            ff_h   = ff_mn + 20.*ff_sg
             print('Setting', FF, 'to SM value:', ff_mn, 'with sigma', ff_sg, ', allowed to vary in fit b/w [', ff_l, ff_h, ']')
             ffact[FF] = tfo.FitParameter(FF, ff_mn, ff_l, ff_h, 0.08)
             ffact[FF].fix() #fix all the ff params
@@ -1111,7 +1111,7 @@ def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = Fa
         model.randomise_wc_params()
 
         #Randomising the starting values of ff parameters according a multidimensional gaussian distibution from Lattice QCD (LQCD) paper.
-        #NB1: The allowed ranges for the form factors is  [ff_mean - 10. * ff_sigma, ff_mean + 10 * ff_sigma] where ff_mean and ff_sigma is the central value and uncertainty as measured in LQCD paper.
+        #NB1: The allowed ranges for the form factors is  [ff_mean - 20. * ff_sigma, ff_mean + 20. * ff_sigma] where ff_mean and ff_sigma is the central value and uncertainty as measured in LQCD paper.
         #NB2: If FF are not floated then they are not randomised
         model.randomise_ff_params()
 
