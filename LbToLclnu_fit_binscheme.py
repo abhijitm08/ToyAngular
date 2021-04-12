@@ -1,9 +1,9 @@
 import sys, os
+os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Do not use GPU
 import time, pprint
 import argparse
-import tensorflow as tf
 import numpy as np
-os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Do not use GPU
+import tensorflow as tf
 sys.path.append(os.path.abspath(os.getcwd()))
 from util import LbToLclNu_Model, str2bool, Minimize
 fitdir=os.path.dirname(os.path.abspath(__file__))
@@ -28,22 +28,21 @@ def main():
     #print(b_model())
     
     #Generate a binned data
-    ##method1: Use "binned" pdf where each bin entry is sampled from a poisson distribution
-    #b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
-    #method2: Use "unbinned" pdf to generate data (using accept-reject method) and then bin it.
-    #NB: For investigating binning schemes we will be fitting the same sample with different schemes so generate one sample and store it
-    rootfiledir   = direc+'toyrootfiles/'
-    sample_fname  = rootfiledir+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
-    if not os.path.exists(rootfiledir):
-        print('Making directory ', direc+'toyrootfiles')
-        os.system('mkdir '+direc+'toyrootfiles')
-
-    if os.path.isfile(sample_fname):
-        print('Importing the file', sample_fname)
-        b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
+    b_data = None
+    if unbinned_toygen:
+        #Use "unbinned" pdf to generate data (using accept-reject method) and then bin it.
+        #NB: For investigating binning schemes we will be fitting the same sample with different schemes so generate one sample and store it
+        rootfiledir   = direc+'toyrootfiles/'
+        sample_fname  = rootfiledir+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
+        if os.path.isfile(sample_fname):
+            print('Importing the file', sample_fname)
+            b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
+        else:
+            print('Making a new file', sample_fname)
+            b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = False, store_file = True, fname = sample_fname) #
     else:
-        print('Making a new file', sample_fname)
-        b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = False, store_file = True, fname = sample_fname) #
+        #Use "binned" pdf where each bin entry is sampled from a poisson distribution
+        b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
 
     #Define the negative log-likilihood with/without the gaussian constrain on the floated form factors. 
     #Actually it returns a function that takes dictionary of parameters as input (a requirement by TFA2 package).
@@ -53,7 +52,7 @@ def main():
 
     #For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
     #This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
-    reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False)
+    reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False, use_grad = usegrad, randomiseFF = randomiseFF)
     #pprint.pprint(reslts)
 
     ##write the fit results to a text file
@@ -75,7 +74,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--floatWC'   , dest='floatWC',type=str, required=True, help='(string) Name of the Wilson coefficient (WC) to be floated. Available options are [CVR,CSR,CSL,CT].')
     parser.add_argument('-s', '--seed'      , dest='seed'   ,type=int, required=True, help='(int) Seed for generation of fake/toy data. This should be different for each toy.')
     #optional arguments
-    parser.add_argument('-b', '--bscheme'   , dest='bscheme',type=str, default='Scheme0',help='(string) Binning scheme to be used. Available options are [Scheme0,Scheme1,Scheme2,Scheme3,Scheme4,Scheme5,Scheme6] and default is Scheme0.')
+    parser.add_argument('-b', '--bscheme'   , dest='bscheme',type=str, default='Scheme2',help='(string) Binning scheme to be used. Available options are [Scheme0,Scheme1,Scheme2,Scheme3,Scheme4,Scheme5,Scheme6] and default is Scheme2. See BinningSchemes/Binning_Scheme.py.')
     parser.add_argument('-n', '--nevnts'    , dest='nevnts' ,type=int, default=int(7.5e6),help='(int) Size of the toy sample. Default is 7.5M events.')
     parser.add_argument('-nf','--nfits'     , dest='nfits'  ,type=int, default=1,help='(int) Number of fits to conduct to a given sample. Default in 1.')
     parser.add_argument('-sf','--suffix'    , dest='suffix' ,type=str, default='toy',help="(int) A unique suffix added to the name of the fit result file (*_suffix.txt) and plot file (*_suffix.pdf). Default is 'toy'.")
@@ -85,13 +84,16 @@ if __name__ == '__main__':
     parser.add_argument('-effp', '--effpath', dest='effpath',type=str, default=fitdir+'/responsematrix_eff/Eff.p',help='(string) Path to efficiency file. Default is: '+fitdir+'/responsematrix_eff/Eff.p')
     parser.add_argument('-resn', '--resn'   , dest='resn'   ,type=str2bool,default='False',help='(bool) Set to True if you want resolution information included in model. Default is False.')
     parser.add_argument('-resp', '--respath', dest='respath',type=str,default=fitdir+'/responsematrix_eff/responsematrix.p',help='(bool) Path to resoponse matrix file. Default is:'+fitdir+'/responsematrix_eff/responsematrix.p')
-    parser.add_argument('-e', '--floated_FF' , dest='floated_FF',nargs='+', default = ['None'], 
+    parser.add_argument('-utgen', '--unbinned_toygen', dest='unbinned_toygen' ,type=str2bool,default='True',help='(bool) Set to True if you want toys generated in an unbinned manner and False if you want the bin content to be fluctuated with Poisson error. Default is True.')
+    parser.add_argument('-e', '--floated_FF', dest='floated_FF',nargs='+', default = ['None'], 
     help="(list) List of form factor (FF) parameters that you want floated in the fit. \
           Default is 'None' that is all FF parameters are fixed. \
           When CVR or CSR or CSL is set as 'floatWC': 11 FF parameters can be floated, they are a0f0 a0fplus a0fperp a1f0 a1fplus a1fperp a0g0 a0gplus a1g0 a1gplus a1gperp \
           When CT is set as 'floatWC': In addition to the 11 FF, we can float 7 more which are a0hplus a0hperp a0htildeplus a1hplus a1hperp a1htildeplus a1htildeperp") 
     parser.add_argument('-inter', '--cpuinter'    , dest='cpuinter' ,type=int, default=int(1),help='(int) Number of cores to use for TensorFlow for INTER operations. Default is 1 core.')
     parser.add_argument('-intra', '--cpuintra'    , dest='cpuintra' ,type=int, default=int(1),help='(int) Number of cores to use for TensorFlow for INTRA operations (matrix multiplication, etc). Default is 1 core.')
+    parser.add_argument('-g'    , '--usegrad'     , dest='usegrad'  ,type=str2bool,default='True',help='(bool) Set to True if you want TF gradients to be used instead of Minuit in minimisation. Default is True.')
+    parser.add_argument('-rFF'  , '--randomiseFF' , dest='randomiseFF',type=str2bool,default='True',help='(bool) Set to True if you want FF randomised before fitting or else just set to the LQCD central values. Default is True.')
     args       = parser.parse_args()
     floatWC    = args.floatWC
     seed       = args.seed
@@ -108,8 +110,22 @@ if __name__ == '__main__':
     floated_FF = args.floated_FF
     cpuinter   = args.cpuinter
     cpuintra   = args.cpuintra
+    unbinned_toygen = args.unbinned_toygen
+    usegrad    = args.usegrad
+    randomiseFF= args.randomiseFF
     print(args)
     tf.config.threading.set_intra_op_parallelism_threads(cpuinter)
     tf.config.threading.set_inter_op_parallelism_threads(cpuintra)
     if not direc.endswith('/'): direc += '/'
+
+    #make direc if it does not exist
+    if not os.path.exists(direc):
+        os.system('mkdir '+direc)
+
+    #if unbinned_toygen is True then make directory where toy is stored
+    if unbinned_toygen:
+        if not os.path.exists(direc+'toyrootfiles'):
+            print('Making directory since unbinned_toygen is set to True', direc+'toyrootfiles')
+            os.system('mkdir '+direc+'toyrootfiles')
+
     main()
