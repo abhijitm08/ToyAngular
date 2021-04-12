@@ -14,3 +14,4 @@ toyrootfiles
 plots/sigbkg_5x5bscheme_ffall/
 plots/sigbkg_5x5bscheme_ffall_largeyld/
 plots/sigbkg_5x5bscheme_ffsubset/
+plots/*/

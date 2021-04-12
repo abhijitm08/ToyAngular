@@ -34,10 +34,6 @@ def main():
         #NB: For investigating binning schemes we will be fitting the same sample with different schemes so generate one sample and store it
         rootfiledir   = direc+'toyrootfiles/'
         sample_fname  = rootfiledir+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
-        if not os.path.exists(rootfiledir):
-            print('Making directory ', direc+'toyrootfiles')
-            os.system('mkdir '+direc+'toyrootfiles')
-
         if os.path.isfile(sample_fname):
             print('Importing the file', sample_fname)
             b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
@@ -56,7 +52,7 @@ def main():
 
     #For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
     #This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
-    reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False)
+    reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = True, use_minos = False, use_grad = usegrad, randomiseFF = randomiseFF)
     #pprint.pprint(reslts)
 
     ##write the fit results to a text file
@@ -96,6 +92,8 @@ if __name__ == '__main__':
           When CT is set as 'floatWC': In addition to the 11 FF, we can float 7 more which are a0hplus a0hperp a0htildeplus a1hplus a1hperp a1htildeplus a1htildeperp") 
     parser.add_argument('-inter', '--cpuinter'    , dest='cpuinter' ,type=int, default=int(1),help='(int) Number of cores to use for TensorFlow for INTER operations. Default is 1 core.')
     parser.add_argument('-intra', '--cpuintra'    , dest='cpuintra' ,type=int, default=int(1),help='(int) Number of cores to use for TensorFlow for INTRA operations (matrix multiplication, etc). Default is 1 core.')
+    parser.add_argument('-g'    , '--usegrad'     , dest='usegrad'  ,type=str2bool,default='True',help='(bool) Set to True if you want TF gradients to be used instead of Minuit in minimisation. Default is True.')
+    parser.add_argument('-rFF'  , '--randomiseFF' , dest='randomiseFF',type=str2bool,default='True',help='(bool) Set to True if you want FF randomised before fitting or else just set to the LQCD central values. Default is True.')
     args       = parser.parse_args()
     floatWC    = args.floatWC
     seed       = args.seed
@@ -113,8 +111,21 @@ if __name__ == '__main__':
     cpuinter   = args.cpuinter
     cpuintra   = args.cpuintra
     unbinned_toygen = args.unbinned_toygen
+    usegrad    = args.usegrad
+    randomiseFF= args.randomiseFF
     print(args)
     tf.config.threading.set_intra_op_parallelism_threads(cpuinter)
     tf.config.threading.set_inter_op_parallelism_threads(cpuintra)
     if not direc.endswith('/'): direc += '/'
+
+    #make direc if it does not exist
+    if not os.path.exists(direc):
+        os.system('mkdir '+direc)
+
+    #if unbinned_toygen is True then make directory where toy is stored
+    if unbinned_toygen:
+        if not os.path.exists(direc+'toyrootfiles'):
+            print('Making directory since unbinned_toygen is set to True', direc+'toyrootfiles')
+            os.system('mkdir '+direc+'toyrootfiles')
+
     main()
