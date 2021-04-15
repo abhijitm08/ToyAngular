@@ -1071,7 +1071,7 @@ class LbToLclNu_Model:
         hpull.Draw("colz")
         c3.SaveAs(fname.replace('.pdf', '_pull.pdf'))
 
-    def write_fit_results(self, results, filename):
+    def write_fit_results(self, results, filename, get_covariance = False):
         f = open(filename, "w")
         floated_params = None
         if (self.ff_floated is None) and (self.wc_floated is not None):
@@ -1101,15 +1101,16 @@ class LbToLclNu_Model:
         f.write(s + "\n")
         f.close()
 
-        f = open(filename.replace('.txt', '_covmatrix.txt'), "w")
-        for k1 in list(results["covmatrix"].keys()):
-            for k2 in list(results["covmatrix"].keys()):
-                s = '{0} {1} {2}'.format(k1, k2, results["covmatrix"][k1][k2])
-                f.write(s + "\n")
-        f.close()
+        if get_covariance:
+            f = open(filename.replace('.txt', '_covmatrix.txt'), "w")
+            for k1 in list(results["covmatrix"].keys()):
+                for k2 in list(results["covmatrix"].keys()):
+                    s = '{0} {1} {2}'.format(k1, k2, results["covmatrix"][k1][k2])
+                    f.write(s + "\n")
+            f.close()
 
 ########### Define other useful functions below
-def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = False, use_grad = False, randomiseFF = True):
+def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = False, use_grad = False, randomiseFF = True, get_covariance = False):
     nllval = None
     reslts = None
     for nfit in range(nfits):
@@ -1124,7 +1125,7 @@ def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = Fa
             model.randomise_ff_params()
 
         #Conduct the fit
-        results = tfo.run_minuit(nll, list(tot_params.values()), use_gradient=use_grad, use_hesse = use_hesse, use_minos = use_minos, get_covariance = True)
+        results = tfo.run_minuit(nll, list(tot_params.values()), use_gradient=use_grad, use_hesse = use_hesse, use_minos = use_minos, get_covariance = get_covariance)
 
         #out of nfits pick the result with the least negative log likelihood (NLL)
         if nfit == 0: 

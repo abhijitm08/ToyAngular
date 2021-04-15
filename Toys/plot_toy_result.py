@@ -183,7 +183,7 @@ def main():
 
     #make fres dictionary and fill floatedvars. here just get the keys for the fres dictionary. no content stored
     fres       = {}
-    resfname   = direc+'results_'+floatWC+'_1_'+bscheme+'_'+str(nevnts)+'_'+'_'.join(floated_FF)+'_'+suffix+'.txt'
+    resfname   = direc+'results_'+floatWC+'_0_'+bscheme+'_'+str(nevnts)+'_'+'_'.join(floated_FF)+'_'+suffix+'.txt'
     if not os.path.isfile(resfname): print('File does not exist', resfname)
     fres['seed'] = []
     f = open(resfname, "r")

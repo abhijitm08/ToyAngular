@@ -14,6 +14,8 @@ for suffix in suffixes:
         command  = "python plot_toy_result.py -f CVR -b Scheme2 -sf "+suffix+" -d "+fitdir+"plots/"+suffix+"/ -e All -smin 0 -smax 500"
     elif 'CVRsubsetFF' in suffix:
         command  = "python plot_toy_result.py -f CVR -b Scheme2 -sf "+suffix+" -d "+fitdir+"plots/"+suffix+"/ -e a0f0 a1f0 a1g0 a1gperp -smin 0 -smax 500"
+    elif 'FFsubset' in suffix:
+        command  = "python plot_toy_result.py -f None -b Scheme2 -sf "+suffix+" -d "+fitdir+"plots/"+suffix+"/ -e a0f0 a1f0 a1fplus a1fperp a1g0 -smin 0 -smax 500"
 
     if 'largeyld' in suffix:
         command += " -n 75000000"
