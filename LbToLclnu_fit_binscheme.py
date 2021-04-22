@@ -57,8 +57,7 @@ def main():
         #Use "binned" pdf where each bin entry is sampled from a poisson distribution
         b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
 
-    print(b_data)
-    exit(1)
+    #print('Binned data is', b_data)
 
     #Define the negative log-likilihood with/without the gaussian constrain on the floated form factors. 
     #Actually it returns a function that takes dictionary of parameters as input (a requirement by TFA2 package).
