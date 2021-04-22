@@ -39,15 +39,26 @@ def main():
         rootfiledir   = direc+'toyrootfiles/'
         sample_fname  = rootfiledir+'toysample_'+str(seed)+'_'+str(nevnts)+'_'+suffix+'.root'
         if os.path.isfile(sample_fname):
-            print('Importing the file', sample_fname)
-            b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
+            binnedfname = sample_fname.replace('.root', '_'+bscheme+'_binned.npy')
+            if os.path.isfile(binnedfname):
+                print('Importing the binned file', binnedfname)
+                b_data  = np.load(binnedfname)
+            else:
+                print('Importing the root file', sample_fname)
+                b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = True, store_file = False, fname = sample_fname) #
+                print('Saving binned numpy histogram', binnedfname)
+                np.save(binnedfname, b_data)
         else:
             print('Making a new file', sample_fname)
-            b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = False, store_file = True, fname = sample_fname) #
+            b_data  = model.generate_binned_data_alternate(nevnts, bscheme, seed = seed, import_file = False, store_file = True, fname = sample_fname)
+            print('Saving binned numpy histogram', binnedfname)
+            np.save(binnedfname, b_data)
     else:
         #Use "binned" pdf where each bin entry is sampled from a poisson distribution
         b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
 
+    print(b_data)
+    exit(1)
 
     #Define the negative log-likilihood with/without the gaussian constrain on the floated form factors. 
     #Actually it returns a function that takes dictionary of parameters as input (a requirement by TFA2 package).
@@ -75,6 +86,7 @@ def main():
     plotfname = direc+resname+'.pdf'
     b_fit = b_model().numpy() #After the setting the parameter values to the estimated ones (as above), we get here the predicted shape
     if plotRes: model.plot_fitresult(b_data, b_fit, bin_scheme = bscheme, fname = plotfname)
+    print('Final Nll:', nll(tot_params).numpy())
     
     end = time.time(); print('Time taken in min', (end - start)/60.)
 
