@@ -22,10 +22,12 @@ suffixes   = []
 
 #suffixes  += ['FFOnly_gradFalse']
 #suffixes  += ['FFOnly_gradTrue']
-suffixes  += ['FFOnly_gradFalse_largeyld']
-suffixes  += ['FFOnly_gradFalse_largeryld']
-suffixes  += ['FFOnly_gradTrue_largeyld']
-suffixes  += ['FFOnly_gradTrue_largeryld']
+#suffixes  += ['FFOnly_gradFalse_largeyld']
+#suffixes  += ['FFOnly_gradFalse_largeryld']
+#suffixes  += ['FFOnly_gradTrue_largeyld']
+#suffixes  += ['FFOnly_gradTrue_largeryld']
+suffixes  += ['FFsubset_gradTrue']
+suffixes  += ['FFsubset_gradFalse']
 
 #suffixes  += ['CVRFF_gradFalse']
 #suffixes  += ['CVRFF_gradTrue']
@@ -52,6 +54,8 @@ for suffix in suffixes:
             command  += "python LbToLclnu_fit_binscheme.py -f CVR -b Scheme2 -nf 20 -sf "+suffix+" -d ./plots/"+suffix+"/ -p False -effn True -resn True -utgen False -e All"
         elif 'CVRsubsetFF' in suffix:
             command  += "python LbToLclnu_fit_binscheme.py -f CVR -b Scheme2 -nf 20 -sf "+suffix+" -d ./plots/"+suffix+"/ -p False -effn True -resn True -utgen False -e a0f0 a1f0 a1g0 a1gperp"
+        elif 'FFsubset' in suffix:
+            command  += "python LbToLclnu_fit_binscheme.py -f None -b Scheme2 -nf 20 -sf "+suffix+" -d ./plots/"+suffix+"/ -p False -effn True -resn True -utgen False -e a0f0 a1f0 a1fplus a1fperp a1g0"
 
         if 'gradFalse' in suffix:
             command += " -g False"

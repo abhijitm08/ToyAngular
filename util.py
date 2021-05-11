@@ -173,12 +173,12 @@ class LbToLclNu_Model:
         """Make FF parameters"""
         #make dictionary of ff params
         ffact = {}
-        print('Setting FF to LQCD central value and allowed to vary b/w [lqcd_val - 20 * lqcd_sigma, lqcd_val + 20 * lqcd_sigma]. So this corresponds to...')
+        print('Setting FF to LQCD central value and allowed to vary b/w [lqcd_val - 100 * lqcd_sigma, lqcd_val + 100 * lqcd_sigma]. So this corresponds to...')
         for FF in self.FFs[:-2]: 
             ff_mn  = self.ff_mean[FF]
             ff_sg  = np.sqrt(self.ff_cov[FF][FF])
-            ff_l   = ff_mn - 20.*ff_sg
-            ff_h   = ff_mn + 20.*ff_sg
+            ff_l   = ff_mn - 100.*ff_sg
+            ff_h   = ff_mn + 100.*ff_sg
             print('Setting', FF, 'to SM value:', ff_mn, 'with sigma', ff_sg, ', allowed to vary in fit b/w [', ff_l, ff_h, ']')
             ffact[FF] = tfo.FitParameter(FF, ff_mn, ff_l, ff_h, 0.08)
             ffact[FF].fix() #fix all the ff params
@@ -937,7 +937,7 @@ class LbToLclNu_Model:
 
     def import_unbinned_data(self, fname = './test.root'):
         df = read_root(fname, columns=['q2', 'w_ctheta_l'])
-        np_df = df.to_numpy()
+        np_df = df[['q2', 'w_ctheta_l']].to_numpy()
         #print(np_df)
         return np_df
 
@@ -954,7 +954,6 @@ class LbToLclNu_Model:
         if store_file:
             dt  = self.prepare_data(sample)
             df  = pd.DataFrame.from_dict(dt)
-            #print(df)
             to_root(df, fname, key='tree', store_index=False)
 
         return sample
@@ -1071,7 +1070,7 @@ class LbToLclNu_Model:
         hpull.Draw("colz")
         c3.SaveAs(fname.replace('.pdf', '_pull.pdf'))
 
-    def write_fit_results(self, results, filename):
+    def write_fit_results(self, results, filename, get_covariance = False):
         f = open(filename, "w")
         floated_params = None
         if (self.ff_floated is None) and (self.wc_floated is not None):
@@ -1101,15 +1100,16 @@ class LbToLclNu_Model:
         f.write(s + "\n")
         f.close()
 
-        f = open(filename.replace('.txt', '_covmatrix.txt'), "w")
-        for k1 in list(results["covmatrix"].keys()):
-            for k2 in list(results["covmatrix"].keys()):
-                s = '{0} {1} {2}'.format(k1, k2, results["covmatrix"][k1][k2])
-                f.write(s + "\n")
-        f.close()
+        if get_covariance:
+            f = open(filename.replace('.txt', '_covmatrix.txt'), "w")
+            for k1 in list(results["covmatrix"].keys()):
+                for k2 in list(results["covmatrix"].keys()):
+                    s = '{0} {1} {2}'.format(k1, k2, results["covmatrix"][k1][k2])
+                    f.write(s + "\n")
+            f.close()
 
 ########### Define other useful functions below
-def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = False, use_grad = False, randomiseFF = True):
+def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = False, use_grad = False, randomiseFF = True, get_covariance = False):
     nllval = None
     reslts = None
     for nfit in range(nfits):
@@ -1118,13 +1118,13 @@ def Minimize(nll, model, tot_params, nfits = 1, use_hesse = True, use_minos = Fa
         model.randomise_wc_params()
 
         #Randomising the starting values of ff parameters according a multidimensional gaussian distibution from Lattice QCD (LQCD) paper.
-        #NB1: The allowed ranges for the form factors is  [ff_mean - 20. * ff_sigma, ff_mean + 20. * ff_sigma] where ff_mean and ff_sigma is the central value and uncertainty as measured in LQCD paper.
+        #NB1: The allowed ranges for the form factors is  [ff_mean - 100. * ff_sigma, ff_mean + 100. * ff_sigma] where ff_mean and ff_sigma is the central value and uncertainty as measured in LQCD paper.
         #NB2: If FF are not floated then they are not randomised
         if randomiseFF:
             model.randomise_ff_params()
 
         #Conduct the fit
-        results = tfo.run_minuit(nll, list(tot_params.values()), use_gradient=use_grad, use_hesse = use_hesse, use_minos = use_minos, get_covariance = True)
+        results = tfo.run_minuit(nll, list(tot_params.values()), use_gradient=use_grad, use_hesse = use_hesse, use_minos = use_minos, get_covariance = get_covariance)
 
         #out of nfits pick the result with the least negative log likelihood (NLL)
         if nfit == 0: 
