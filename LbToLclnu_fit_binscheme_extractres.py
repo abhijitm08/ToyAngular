@@ -42,7 +42,7 @@ def main():
     #give inputs to function
     n = 500 
     TWC = 0
-    stdguess1 = 0.01
+    stdguess1 = 1
     check = 0
 
     #read given inputs
@@ -115,8 +115,8 @@ def main():
             #plt.show()
 
         plt.figure()
-        #newval = (np.array(val)-TWC)/np.array(uncert)
-        newval = val-TWC
+        newval = (np.array(val)-TWC)/np.array(uncert)
+        #newval = val-TWC
         print('Newval: ',newval)
         if d == 1:
             count, bins, popt, pcov, x = gaussfit(newval, TWC, stdguess1)
@@ -138,18 +138,18 @@ def main():
 
         #print('Fitted Mean and Sigma:',popt)
         plt.plot(x, g(x, *popt), label = 'Fitted Normal N('+ str(np.round(popt[0],5)) + ','+ str(np.round(popt[1],5)) + ')', color = 'r')
-        #plt.plot(x, g(x, TWC, stdguess[j]), label = 'Normal N(0,' + str(stdguess[j]) + ')')
+        plt.plot(x, g(x, TWC, stdguess[j]), label = 'Normal N(0,' + str(stdguess[j]) + ')')
         plt.legend()
         plt.xlabel('Hessian Error')
-        #plt.ylabel(coeff + ' - True' + coeff + ')/Hess [%/100]')
-        plt.ylabel(coeff + ' - True' + coeff)
-        #plt.title('(' + coeff + ' - True' + coeff + ')/Hess of binscheme '+ str(scheme) + ' and ' + FF + ' FF floated' )
-        plt.title(coeff + ' in binscheme '+ str(binscheme[j]) + ' and ' + FF + ' FF floated') 
+        plt.ylabel(coeff + ' - True' + coeff + ')/Hess [%/100]')
+        #plt.ylabel(coeff + ' - True' + coeff)
+        plt.title('(' + coeff + ' - True' + coeff + ')/Hess of binscheme '+ str(binscheme[j]) + ' and ' + FF + ' FF floated' )
+        #plt.title(coeff + ' in binscheme '+ str(binscheme[j]) + ' and ' + FF + ' FF floated') 
 
         print('plots/results_' + coeff + '_' + str(100) + '_Scheme' + str(binscheme[j]) + '_7500000_' + FF + '_toy.txt')
 
     plt.show()
-
+    exit(1)
     #write composed data to .txt file
     #f = open('data_combined/Results_' + coeff + '_binschemes.txt' , 'w')   #'w' for writing
     #f.write(str(val_tot.tolist()) + str( uncert_tot.tolist()))    # Write inside file
@@ -223,7 +223,7 @@ def main():
                 ax.annotate( '(' + str(np.round(opt_std,5))+ ')', xy = (binscheme[a],opt_std))
             else:
                 ax.annotate( '(' + str(np.round(opt_std[a],5))+ ')', xy = (binscheme[a],opt_std[a]))
-        ax.hlines(0,m1-1,m2, linestyle = 'dashed', color = 'k')
+        #ax.hlines(0,m1-1,m2, linestyle = 'dashed', color = 'k')
         ax.set_ylabel('StdDev')
         ax.set_xlabel('Binning Scheme')
         ax.set_title('Standard Deviation of '+ coeff +' with '+ FF +' FF floated')
@@ -289,7 +289,7 @@ def main():
         ax.grid()
         plt.show()
 
-    #exit(1)
+    exit(1)
 
     #########
    # Extract different WC
