@@ -69,6 +69,13 @@ def defing_binning_scheme():
     BinScheme[bscheme]['qsq']  = np.linspace(mlep**2, (mLb - mLc)**2, 40+1)
     BinScheme[bscheme]['cthl'] = np.linspace(-1., 1., 40+1)
 
+    #Scheme 6: 30x30 = 900
+    bscheme = 'Scheme7'
+    BinScheme[bscheme] = {}
+    BinScheme[bscheme]['qsq']  = np.linspace(mlep**2, (mLb - mLc)**2, 30+1)
+    BinScheme[bscheme]['cthl'] = np.linspace(-1., 1., 30+1)
+
+
     #calculate bin centers and bin limit dictionaries
     for k in list(BinScheme.keys()):
         bcnts, bedges = get_bin_edges(BinScheme[k]['qsq'], BinScheme[k]['cthl'])
