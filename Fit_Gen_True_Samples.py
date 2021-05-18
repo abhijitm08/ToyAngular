@@ -52,7 +52,10 @@ def main():
     np.random.seed(seed)
     
     #generate list of form factors to be floated (note fixed one a0gplus since not sensitive and correlated with others).
-    ff_params = ['a0f0', 'a0fplus', 'a0fperp', 'a0g0', 'a1f0', 'a1fplus', 'a1fperp', 'a1g0', 'a1gplus', 'a1gperp']
+    #ff_params = ['a0f0', 'a0fplus', 'a0fperp', 'a0g0', 'a1f0', 'a1fplus', 'a1fperp', 'a1g0', 'a1gplus', 'a1gperp']
+    #ff_params  = ['a0f0', 'a0fplus', 'a0fperp', 'a0g0', 'a1fplus', 'a1fperp', 'a1g0', 'a1gplus', 'a1gperp'] #causes some params to hit limit
+    #ff_params = ['a0fplus', 'a0fperp', 'a0g0', 'a1fplus', 'a1fperp', 'a1g0', 'a1gplus', 'a1gperp'] #is fine
+    ff_params = ['a0fplus', 'a0fperp', 'a0g0', 'a1fplus', 'a1fperp', 'a1gplus', 'a1gperp'] #is fine
     
     #Define the Model and unbinned nll
     MLb     = 5619.49997776e-3 #GeV
@@ -61,7 +64,7 @@ def main():
     model   = LbToLclNu_Model(MLb, MLc, Mlep, wc_floated_names = ['None'], ff_floated_names = ff_params) 
     
     #get real data
-    gen_sample = (get_gen_sample()[0])[:20000,:]
+    gen_sample = (get_gen_sample()[0])
     print(gen_sample)
     print(gen_sample.shape)
     #gen fake data
@@ -87,6 +90,9 @@ def main():
     model.plot_fitresult_unbinned(gen_sample, fitres, 'plots/fitres.pdf', bin_scheme = 'Scheme7', xlabel = "$q^{2} [GeV^{2}]$", ylabel = r"$cos(\theta_{\mu})$")
     for k,v in tot_params.items(): print(k, v.numpy())
     print('NLL: ', nll(tot_params).numpy()) 
+
+    #store fit result
+    model.write_fit_results(reslts, './MC_fitres.txt', get_covariance = False)
 
 if __name__ == '__main__':
     main()

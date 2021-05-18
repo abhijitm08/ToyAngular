@@ -184,8 +184,9 @@ class LbToLclNu_Model:
         for FF in self.FFs[:-2]: 
             ff_mn  = self.ff_mean[FF]
             ff_sg  = np.sqrt(self.ff_cov[FF][FF])
-            ff_l   = ff_mn - 100.*ff_sg
-            ff_h   = ff_mn + 100.*ff_sg
+            nsigma_ff = 100.
+            ff_l   = ff_mn - nsigma_ff*ff_sg
+            ff_h   = ff_mn + nsigma_ff*ff_sg
             print('Setting', FF, 'to SM value:', ff_mn, 'with sigma', ff_sg, ', allowed to vary in fit b/w [', ff_l, ff_h, ']')
             ffact[FF] = tfo.FitParameter(FF, ff_mn, ff_l, ff_h, 0.08)
             ffact[FF].fix() #fix all the ff params
@@ -1194,11 +1195,11 @@ class LbToLclNu_Model:
         root_ylabel= (ylabel.replace('$', '')).replace(r'\\', r'#')
         q2labels   = (xlabel, 'Freq.')
         cthllabels = (ylabel, 'Freq.')
-        print('Plotting q2')
-        _bin_and_plot_1D('qsq' , data[:,0], fitres[:,0], fname.replace('.pdf', '_x.pdf'),   q2labels)
-        print('Plotting cthl')
-        _bin_and_plot_1D('cthl', data[:,1], fitres[:,1], fname.replace('.pdf', '_y.pdf'), cthllabels)
-        #self.plot_fitresult_binned_2D(np_data, np_fit, bin_scheme = bin_scheme, fname = fname, xlabel = root_xlabel, ylabel = root_ylabel)
+        #print('Plotting q2')
+        #_bin_and_plot_1D('qsq' , data[:,0], fitres[:,0], fname.replace('.pdf', '_x.pdf'),   q2labels)
+        #print('Plotting cthl')
+        #_bin_and_plot_1D('cthl', data[:,1], fitres[:,1], fname.replace('.pdf', '_y.pdf'), cthllabels)
+        self.plot_fitresult_binned_2D(np_data, np_fit, bin_scheme = bin_scheme, fname = fname, xlabel = root_xlabel, ylabel = root_ylabel)
     
     def write_fit_results(self, results, filename, get_covariance = False):
         f = open(filename, "w")
