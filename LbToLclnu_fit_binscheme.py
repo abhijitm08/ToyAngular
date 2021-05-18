@@ -84,7 +84,7 @@ def main():
     #plot the fit results
     plotfname = direc+resname+'.pdf'
     b_fit = b_model().numpy() #After the setting the parameter values to the estimated ones (as above), we get here the predicted shape
-    if plotRes: model.plot_fitresult(b_data, b_fit, bin_scheme = bscheme, fname = plotfname)
+    if plotRes: model.plot_fitresult_binned_2D(b_data, b_fit, bin_scheme = bscheme, fname = plotfname)
     print('Final Nll:', nll(tot_params).numpy())
     
     end = time.time(); print('Time taken in min', (end - start)/60.)

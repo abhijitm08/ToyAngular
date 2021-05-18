@@ -26,6 +26,9 @@ from root_pandas import to_root
 from root_pandas import read_root
 import pandas as pd
 import argparse
+#mathplot lib
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
 
 class LbToLclNu_Model:
     """Class that defines the Lb->Lclnu decay"""
@@ -157,6 +160,10 @@ class LbToLclNu_Model:
             self.ff_floated_names = [p.name for p in self.ff_floated]
             self.ff_floated_mean, self.ff_floated_cov = self.get_FF_mean_cov()
 
+        #define a free parameter independent integral to cache everything
+        self.fp_indp_terms = None
+        self.fp_indp_terms_norm = None
+
     def get_wc_params(self):
         """Make WC parameters"""
         Wlcoef = {}
@@ -177,8 +184,9 @@ class LbToLclNu_Model:
         for FF in self.FFs[:-2]: 
             ff_mn  = self.ff_mean[FF]
             ff_sg  = np.sqrt(self.ff_cov[FF][FF])
-            ff_l   = ff_mn - 100.*ff_sg
-            ff_h   = ff_mn + 100.*ff_sg
+            nsigma_ff = 100.
+            ff_l   = ff_mn - nsigma_ff*ff_sg
+            ff_h   = ff_mn + nsigma_ff*ff_sg
             print('Setting', FF, 'to SM value:', ff_mn, 'with sigma', ff_sg, ', allowed to vary in fit b/w [', ff_l, ff_h, ']')
             ffact[FF] = tfo.FitParameter(FF, ff_mn, ff_l, ff_h, 0.08)
             ffact[FF].fix() #fix all the ff params
@@ -705,8 +713,11 @@ class LbToLclNu_Model:
         dynamic_dens  = atfi.sum([free_params[indx[0]] * free_params[indx[1]] * indp_terms[indx] for indx in list(indp_terms.keys())]) #note here both free params are real
         return dynamic_dens
 
-    def get_unbinned_model(self, ph, method= '1'):
+    def get_unbinned_model(self, ph, method= '1', normalisation_sample = False):
         """Define the unbinned model for Lb->Lclnu"""
+        #if method == '1' and normalisation_sample:
+        #    raise Exception('Method', method, 'picked, but normalisation_sample is set to True. Check!')
+
         model = None
         if method == '1':
             obsv              = self.prepare_data(ph) 
@@ -714,19 +725,39 @@ class LbToLclNu_Model:
             dGdO_phsp         = self.get_phasespace_term(obsv)
             model             = dGdO_phsp*dGdO_dynm
         elif method == '2':
-            fp_indp_terms     = self.get_freeparams_indp_terms(ph) #get first free parameter independent terms
-            model             = self.contract_with_freeparams(fp_indp_terms) #contract with the wcs
+            #Cache here the phase space independent integrals once calculated for normalisation sample and once for data sample
+            model = None
+            if not normalisation_sample:
+                print('Not norm')
+                if self.fp_indp_terms is None:
+                    print('Not norm and none')
+                    self.fp_indp_terms = self.get_freeparams_indp_terms(ph) #get first free parameter independent terms
+
+                print('Not norm and not none')
+                model = self.contract_with_freeparams(self.fp_indp_terms) #contract with the wcs
+            else:
+                print('Yes norm')
+                if self.fp_indp_terms_norm is None:
+                    print('Yes norm and none')
+                    self.fp_indp_terms_norm = self.get_freeparams_indp_terms(ph) #get first free parameter independent terms
+
+                print('Yes norm and not none')
+                model              = self.contract_with_freeparams(self.fp_indp_terms) #contract with the wcs
         else:
             raise Exception("Method not recognised")
 
         return model
 
+    def pdf_integral(self, norm_sample, method = '1', ranges = None):
+        """Define integral  of the pdf given a norm sample drawn from uniform distribution and ranges"""
+        if ranges is None:
+            ranges = ranges = self.phase_space.ranges
+
+        intg = atfi.reduce_mean(self.get_unbinned_model(norm_sample, method = method, normalisation_sample = True)) * self.get_phsp_volume(ranges)
+        return intg
+
     def get_normalised_pdf_values(self, phsp_array, fp_dict):
         """Get normalised pdf values for a given phase space array and dictionary of parameters values"""
-
-        def _pdf_integral(norm_sample, ranges = self.phase_space.ranges): 
-            intg = atfi.reduce_mean(self.get_unbinned_model(norm_sample)) * self.get_phsp_volume(ranges)
-            return intg
 
         #get the previous value of wc
         fp_prev_dict = self.get_params_values(param_list = list(fp_dict.keys()))
@@ -738,8 +769,8 @@ class LbToLclNu_Model:
         #print(pdf_unnorm)
         #get the values of the normalised pdf
         norm_smpl  = self.phase_space.unfiltered_sample(1000000)
-        pdf_vals   = pdf_unnorm/_pdf_integral(norm_smpl)
-        #print(_pdf_integral(norm_smpl))
+        pdf_vals   = pdf_unnorm/self.pdf_integral(norm_smpl)
+        #print(self.pdf_integral(norm_smpl))
         #print(pdf_vals)
         #set the old value of wc back
         print('Setting back the old values')
@@ -935,9 +966,9 @@ class LbToLclNu_Model:
                 p.update(newval)
                 if verbose: print('Randomising WC', p.name, 'from', wcprev, 'to', p.numpy())
 
-    def import_unbinned_data(self, fname = './test.root'):
-        df = read_root(fname, columns=['q2', 'w_ctheta_l'])
-        np_df = df[['q2', 'w_ctheta_l']].to_numpy()
+    def import_unbinned_data(self, fname = './test.root', key = 'tree', columns = ['q2', 'w_ctheta_l']):
+        df = read_root(fname, key=key, columns=columns)
+        np_df = df[columns].to_numpy()
         #print(np_df)
         return np_df
 
@@ -1001,7 +1032,7 @@ class LbToLclNu_Model:
             nll_gaus_func =  self.gaussian_constraint_ffparams()  #Ltot = L * Lg => NLLtot = NLL - LogLg
 
         @atfi.function
-        def _nll(pars): 
+        def _nll(pars): #NB: pars get updated automatically hence not used here (However such a function is needed by TFA2)
             mu_i  = n_tot * model_binned()
             mu_tot= atfi.reduce_sum(mu_i) #equal to n_tot here
             NLL   = mu_tot - n_tot - atfi.reduce_sum(data_binned * atfi.log(mu_i))
@@ -1010,7 +1041,19 @@ class LbToLclNu_Model:
 
         return _nll
 
-    def plot_fitresult(self, np_data, np_fit, bin_scheme = 'Scheme0', fname = './fitres.pdf', xlabel = "q^{2} [GeV^{2}]", ylabel = "cos(#theta_{#mu})"):
+    def unbinned_nll(self, data_unbinned, method = '1'): 
+        #normalisation sample
+        norm_smpl  = self.phase_space.unfiltered_sample(1000000)
+
+        @atfi.function
+        def _nll(pars): 
+            pdf_unnorm = self.get_unbinned_model(data_unbinned, method = method)
+            integral   = self.pdf_integral(norm_smpl, method = method)
+            return -tf.reduce_sum(atfi.log(pdf_unnorm / integral))
+
+        return _nll
+
+    def plot_fitresult_binned_2D(self, np_data, np_fit, bin_scheme = 'Scheme0', fname = './fitres.pdf', xlabel = "q^{2} [GeV^{2}]", ylabel = "cos(#theta_{#mu})"):
         """plot the results of fit along with pull"""
         np_data =  np_data.flatten()
         np_fit  =  np_fit.flatten()
@@ -1020,12 +1063,7 @@ class LbToLclNu_Model:
         #print(np_fit.sum())
         np_fit = np_data.sum()/np_fit.sum() * np_fit #np_data unnormalised
 
-        from ROOT import TFile, TTree, TH1D, TH2D, gROOT, gStyle, TCanvas, kGreen, kRed, TCut, TPaveText, TLegend, kBlue, gPad
-        gROOT.SetBatch(True)
-        gStyle.SetOptStat(0);  
-        gStyle.SetOptTitle(0);
-        gROOT.ProcessLine(".x plots/lhcbStyle2D.C")
-    
+        #define binning related things
         BinScheme = defing_binning_scheme()
         xedges    = BinScheme[bin_scheme]['qsq']
         yedges    = BinScheme[bin_scheme]['cthl']
@@ -1033,6 +1071,12 @@ class LbToLclNu_Model:
         nx        = len(BinScheme[bin_scheme]['qsq'])  - 1
         ny        = len(BinScheme[bin_scheme]['cthl']) - 1
         tot_bins  = nx * ny
+    
+        from ROOT import TFile, TTree, TH1D, TH2D, gROOT, gStyle, TCanvas, kGreen, kRed, TCut, TPaveText, TLegend, kBlue, gPad
+        gROOT.SetBatch(True)
+        gStyle.SetOptStat(0);  
+        gStyle.SetOptTitle(0);
+        gROOT.ProcessLine(".x plots/lhcbStyle2D.C")
     
         hdata = TH2D("hdata", "hdata", nx, xedges, ny, yedges);
         hdata.SetXTitle(xlabel); hdata.SetYTitle(ylabel); hdata.SetTitle("Data"); hdata.SetZTitle("Events/Bin")
@@ -1043,7 +1087,7 @@ class LbToLclNu_Model:
 
         for i in range(tot_bins):
             bin_name = 'Bin'+str(i)
-            bcntr    = BinScheme[bin_scheme]['bin_centers'][bin_name]
+            bcntr    = bcntrs[bin_name]
             #print(bcntr)
             glbbin_d = hdata.FindBin(bcntr[0], bcntr[1])
             glbbin_f =  hfit.FindBin(bcntr[0], bcntr[1])
@@ -1060,16 +1104,103 @@ class LbToLclNu_Model:
         c1 = TCanvas("c1","c1")
         hdata.Draw("colz")
         c1.SaveAs(fname.replace('.pdf', '_data.pdf'))
+        c1.Close()
     
         c2 = TCanvas("c2","c2")
         hfit.Draw("colz")
         c2.SaveAs(fname.replace('.pdf', '_fit.pdf'))
+        c2.Close()
     
         c3 = TCanvas("c3","c3")
         gStyle.SetPalette(70)
         hpull.Draw("colz")
         c3.SaveAs(fname.replace('.pdf', '_pull.pdf'))
+        c3.Close()
 
+    def plot_fitresult_binned_1D(self, var, np_data_x, np_fitres_x, bin_scheme, fname, label):
+        #define binning related things
+        BinScheme   = defing_binning_scheme()
+        xedges      = BinScheme[bin_scheme][var]
+        bw          = xedges[1:] - xedges[:-1]     
+        bin_centers = xedges[:-1] + 0.5 * bw
+
+        #normalise the fit result to data
+        np_fitres_x_norm = np_data_x.sum() * np_fitres_x/np_fitres_x.sum()
+
+        #define pull
+        nm   = np_data_x - np_fitres_x_norm
+        dnm  = np.sqrt(np.sqrt(np_data_x)**2 + np.sqrt(np_fitres_x_norm)**2)
+        pull = np.divide(nm, dnm, out=np.zeros_like(nm), where=dnm!=0.)
+        #print('Defining pull 2')
+        #pull = np.nan_to_num(pull)
+    
+        plt.rcParams['axes.unicode_minus'] = True
+        #define fig
+        print('Defining the 1D plot')
+        fig = plt.figure()
+        gs  = gridspec.GridSpec(2, 1, height_ratios = [4,1])
+        axs = plt.subplot(gs[0]), plt.subplot(gs[1])
+    
+        #data 1D
+        xmin = xedges[0]
+        xmax = xedges[-1]
+        axs[0].errorbar(bin_centers, np_data_x.flatten(), xerr=bw * 0.5, yerr=(np.sqrt(np_data_x)).flatten(),fmt = '.', color = 'black', label='Data', linewidth = 2.0, markersize=9)
+        #fitres 1D
+        axs[0].hist(xedges[:-1], xedges, weights=np_fitres_x_norm.flatten(), label='Fit', histtype = 'step', linewidth = 2.5, range=(xmin, xmax), color='b')
+    
+        #set min and max of y and xaxis
+        cmax = [np.max(np_data_x), np.max(np_fitres_x_norm)]
+        cmin = [np.min(np_data_x), np.min(np_fitres_x_norm)]
+        ymin = max(min(cmin), 1e-10); ymax = max(cmax)+100.
+        axs[0].legend(loc='best')
+        axs[0].set_xlim((xmin,xmax))
+        axs[0].set_xlabel(label[0], fontsize=15)
+        axs[0].set_ylabel(label[1], fontsize=15)
+        axs[0].set_ylim((ymin,ymax))
+        axs[0].set_yscale('linear')
+    
+        #axs1
+        axs[1].hist(xedges[:-1], xedges, weights=pull.flatten(), color='green', range=(xmin, xmax))
+        axs[1].hlines(-2.5, xmin, xmax, color='r', linestyles='--', alpha=0.5)
+        axs[1].hlines( 2.5, xmin, xmax, color='r', linestyles='--', alpha=0.5)
+        axs[1].hlines(-5.,  xmin, xmax, color='r', linestyles='-', alpha=0.5)
+        axs[1].hlines( 5.,  xmin, xmax, color='r', linestyles='-', alpha=0.5)
+        axs[1].set_ylabel('Pull')
+        axs[1].set_xlim((xmin,xmax))
+        if np.min(pull) != np.max(pull):
+            axs[1].set_ylim((np.min(pull),np.max(pull)))
+    
+        fig.tight_layout()
+        fig.savefig(fname)
+        fig.clf()
+        print('Done plotting')
+
+    def plot_fitresult_unbinned(self, data, fitres, fname, bin_scheme = 'Scheme7', xlabel = "$q^{2} [GeV^{2}]$", ylabel = r"$cos(\theta_{\mu})$"):
+
+        def _bin_and_plot_1D(var, xdata, xfitres, _fname, _label):
+            _xedges    = BinScheme[bin_scheme][var]
+            np_data_x, _     = np.histogram(xdata, bins = _xedges)
+            np_fitres_x, _   = np.histogram(xfitres, bins = _xedges)
+            np_fitres_x_norm = np_data_x.sum() * np_fitres_x/np_fitres_x.sum()
+            self.plot_fitresult_binned_1D(var, np_data_x, np_fitres_x_norm, bin_scheme, _fname, _label)
+
+        #define binning related things
+        BinScheme = defing_binning_scheme()
+        xedges    = BinScheme[bin_scheme]['qsq']
+        yedges    = BinScheme[bin_scheme]['cthl']
+        #plot 1D and 2D
+        np_data, _ = np.histogramdd(data  , bins=(xedges, yedges))
+        np_fit , _ = np.histogramdd(fitres, bins=(xedges, yedges))
+        root_xlabel= xlabel.replace('$','')
+        root_ylabel= (ylabel.replace('$', '')).replace(r'\\', r'#')
+        q2labels   = (xlabel, 'Freq.')
+        cthllabels = (ylabel, 'Freq.')
+        #print('Plotting q2')
+        #_bin_and_plot_1D('qsq' , data[:,0], fitres[:,0], fname.replace('.pdf', '_x.pdf'),   q2labels)
+        #print('Plotting cthl')
+        #_bin_and_plot_1D('cthl', data[:,1], fitres[:,1], fname.replace('.pdf', '_y.pdf'), cthllabels)
+        self.plot_fitresult_binned_2D(np_data, np_fit, bin_scheme = bin_scheme, fname = fname, xlabel = root_xlabel, ylabel = root_ylabel)
+    
     def write_fit_results(self, results, filename, get_covariance = False):
         f = open(filename, "w")
         floated_params = None

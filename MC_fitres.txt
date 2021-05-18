@@ -1,0 +1,13 @@
+a0fplus 0.807240 0.024355 
+a0fperp 0.874343 0.008484 
+a0g0 0.881870 0.020285 
+a1fplus -4.901205 0.194017 
+a1fperp -4.367930 0.190469 
+a1gplus -3.646928 0.504883 
+a1gperp -3.301660 0.045915 
+loglh 3002537.584722
+is_valid 1
+has_parameters_at_limit 0
+has_accurate_covar 1
+has_posdef_covar 1
+has_made_posdef_covar 0
