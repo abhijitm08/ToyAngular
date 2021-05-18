@@ -931,7 +931,7 @@ class LbToLclNu_Model:
     
         return _binned_model
 
-    def sample_ff_values(self, seed = None, verbose = True):
+    def sample_ff_values(self, seed = None, verbose = True, size = 1):
         """Sample a FF value from multi-dimensional gaussian distribution whose parameters from LQCD"""
         if seed is not None: np.random.seed(seed)
 
@@ -939,7 +939,7 @@ class LbToLclNu_Model:
             print('FF parameters are all fixed so not randomising them!')
             return None
 
-        ffmeanmod = np.random.multivariate_normal(mean=self.ff_floated_mean, cov=self.ff_floated_cov) 
+        ffmeanmod = np.random.multivariate_normal(mean=self.ff_floated_mean, cov=self.ff_floated_cov, size=size) 
         if verbose: print('Sampled FFs:', self.ff_floated_names, ',old mean:', self.ff_floated_mean, ', new mean:', ffmeanmod)
         return ffmeanmod
 
@@ -966,11 +966,12 @@ class LbToLclNu_Model:
                 p.update(newval)
                 if verbose: print('Randomising WC', p.name, 'from', wcprev, 'to', p.numpy())
 
-    def import_unbinned_data(self, fname = './test.root', key = 'tree', columns = ['q2', 'w_ctheta_l']):
+    def import_unbinned_data(self, fname = './test.root', key = 'tree', columns = ['q2', 'w_ctheta_l'], return_type = 'np'):
         df = read_root(fname, key=key, columns=columns)
-        np_df = df[columns].to_numpy()
-        #print(np_df)
-        return np_df
+        if return_type == 'np':
+            df = df[columns].to_numpy()
+
+        return df
 
     def generate_unbinned_data(self, size, seed = None, chunks = 1000000, store_file = False, fname = './test.root'):
         """Generate unbinned data"""
