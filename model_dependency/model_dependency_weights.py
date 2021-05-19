@@ -68,7 +68,7 @@ def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
         ratio_val = (pdf_new/pdf_old)
         #print('PDF_NP/PDF_SM:', ratio_val)
         #add weights to the dict
-        df_phsp_arr['Event_Model_'+scenario+'_'+str(i)] = ratio_val
+        df_phsp_arr['Event_Model_'+str(i)] = ratio_val
         print(i)
         
 def main():
@@ -110,12 +110,12 @@ def main():
 
     #fill with weights
     n_params = 100
-    for scenario in scenarios: fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = n_params)
+    fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = n_params)
     print(df_phsp_arr)
 
     #dump the file to root
     f_new_name = './model_dependency_rootfiles/'+fname.split('/')[-1]
-    f_new_name = f_new_name.replace('.root', '_modeldependency.root')
+    f_new_name = f_new_name.replace('.root', '_'+scenario+'_modeldependency.root')
     print(f_new_name)
     to_root(df_phsp_arr, f_new_name, key=key, store_index=False)
 
@@ -174,5 +174,9 @@ def main():
 
 if __name__ == '__main__':
     file_type  = str(sys.argv[1])
-    seed = 100
+    scenario   = str(sys.argv[2])
+    seed       = 100
+    if scenario not in scenarios:
+        raise Exception('Scenario not in Scenarios')
+
     main()
