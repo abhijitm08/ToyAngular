@@ -10,8 +10,6 @@ import matplotlib.pyplot as plt
 from root_pandas import to_root, read_root
 import pandas as pd
 
-scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
-
 def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
     #get the phase space variables
     phsp_arr_q2   = df_phsp_arr['Lb_True_Q2_mu'].to_numpy() * 1e-6 #convert to GeV^2
@@ -77,14 +75,13 @@ def main():
         fname   = '/disk/lhcb_data/amathad/Lb2Lclnu_analysis/MC/Lb2Lcmunu_MagUp_2016_Combine.root'
         key     = 'DecayTree'
         reco_truth_vars = ['Lb_True_Q2_mu', 'Lb_True_Costhetal_mu', 'q2_Pred', 'costhl_Pred']
-        #extra_sel_vars  = ['isTruth', 'isFiducial', 'Event_FFcorr', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr']
-        extra_sel_vars  = ['isTruth', 'isFiducial', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr']
+        extra_sel_vars  = ['isTruth', 'isFiducial', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr', 'isFullsel', 'runNumber', 'eventNumber']
         columns = reco_truth_vars + extra_sel_vars
     elif file_type == 'Signal_MD':
         fname   = '/disk/lhcb_data/amathad/Lb2Lclnu_analysis/MC/Lb2Lcmunu_MagDown_2016_Combine.root'
         key     = 'DecayTree'
         reco_truth_vars = ['Lb_True_Q2_mu', 'Lb_True_Costhetal_mu', 'q2_Pred', 'costhl_Pred']
-        extra_sel_vars  = ['isTruth', 'isFiducial', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr']
+        extra_sel_vars  = ['isTruth', 'isFiducial', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr', 'isFullsel', 'runNumber', 'eventNumber']
         columns = reco_truth_vars + extra_sel_vars
     elif file_type == 'Gen':
         fname   = '/home/hep/amathad/LbToLclnu_RunTwo/FittingScripts/qsq_cthl_spectra/Differential_density/responsematrix_eff/GeomEffFiles/LcMuNu_gen_new.root'
@@ -114,7 +111,7 @@ def main():
     print(df_phsp_arr)
 
     #dump the file to root
-    f_new_name = './model_dependency_rootfiles/'+fname.split('/')[-1]
+    f_new_name = './model_dependency_rootfiles_new/'+fname.split('/')[-1]
     f_new_name = f_new_name.replace('.root', '_'+scenario+'_modeldependency.root')
     print(f_new_name)
     to_root(df_phsp_arr, f_new_name, key=key, store_index=False)
@@ -176,6 +173,8 @@ if __name__ == '__main__':
     file_type  = str(sys.argv[1])
     scenario   = str(sys.argv[2])
     seed       = 100
+
+    scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
     if scenario not in scenarios:
         raise Exception('Scenario not in Scenarios')
 
