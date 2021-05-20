@@ -20,7 +20,7 @@ import tfa.toymc as tft
 #binning related
 sys.path.append(os.path.abspath(os.getcwd()))
 from BinningSchemes.Binning_Scheme import defing_binning_scheme
-fitdir=os.path.dirname(os.path.abspath(__file__))
+fit_dir=os.path.dirname(os.path.abspath(__file__))
 import pprint
 from root_pandas import to_root
 from root_pandas import read_root
@@ -81,7 +81,7 @@ class LbToLclNu_Model:
         #make SM FF mean and covariance values 
         #ff mean
         self.ff_mean  = {}
-        f     = open(fitdir+"/FF_cov/LambdabLambdac_results.dat", "r")
+        f     = open(fit_dir+"/FF_cov/LambdabLambdac_results.dat", "r")
         for l in f.readlines(): self.ff_mean[l.split()[0]] = float(l.split()[1])
         f.close()
         #print(self.ff_mean)
@@ -89,7 +89,7 @@ class LbToLclNu_Model:
         #ff covariant
         self.ff_cov = {}
         for l in list(self.ff_mean.keys()): self.ff_cov[l] = {}
-        f  = open(fitdir+"/FF_cov/LambdabLambdac_covariance.dat", "r")
+        f  = open(fit_dir+"/FF_cov/LambdabLambdac_covariance.dat", "r")
         for l in f.readlines(): self.ff_cov[l.split()[0]][l.split()[1]] = float(l.split()[2])
         f.close()
         #print(self.ff_cov)
@@ -873,11 +873,11 @@ class LbToLclNu_Model:
         return functools.reduce(lambda x, y: x*y, [r[1] - r[0] for r in lmts])
 
     def get_binned_model(self, bin_scheme = 'Scheme0', applyEff = False, applyResponse = False, 
-                         eff_fname = fitdir+'/responsematrix_eff/Eff.p', 
-                         res_fname = fitdir+'/responsematrix_eff/responsematrix.p'):
+                         eff_fname = fit_dir+'/responsematrix_eff/Eff.p', 
+                         res_fname = fit_dir+'/responsematrix_eff/responsematrix.p'):
         """Define the binned model using the cached integrals"""
         #Get free parameter independent (nterms x nbins) matrix
-        k_fname   = fitdir+'/BinningSchemes/'+bin_scheme+'/keys0.p'
+        k_fname   = fit_dir+'/BinningSchemes/'+bin_scheme+'/keys0.p'
         k_fpdinp  = pickle.load(open(k_fname, 'rb')) #288 keys to map integral value with freeparams (wc,ff)
         print('Number of keys for the free parameter independent integrals', len(k_fpdinp))
         BinScheme = defing_binning_scheme()
@@ -887,7 +887,7 @@ class LbToLclNu_Model:
         fp_indp_intgl = []
         for binnum in range(tot_bins):
             bin_name = 'Bin'+str(binnum)
-            f_name   = fitdir+'/BinningSchemes/'+bin_scheme+'/'+bin_name+'.p'
+            f_name   = fit_dir+'/BinningSchemes/'+bin_scheme+'/'+bin_name+'.p'
             bin_lmts = BinScheme[bin_scheme]['bin_limits'][bin_name]
             bin_vol  = self.get_phsp_volume(bin_lmts)
             fp_indp_intgl += [np.array(pickle.load(open(f_name,'rb')), dtype = np.float64) * bin_vol]
@@ -939,7 +939,11 @@ class LbToLclNu_Model:
             print('FF parameters are all fixed so not randomising them!')
             return None
 
-        ffmeanmod = np.random.multivariate_normal(mean=self.ff_floated_mean, cov=self.ff_floated_cov, size=size) 
+        if size == 1:
+            ffmeanmod = np.random.multivariate_normal(mean=self.ff_floated_mean, cov=self.ff_floated_cov, size=size)[0]
+        else:
+            ffmeanmod = np.random.multivariate_normal(mean=self.ff_floated_mean, cov=self.ff_floated_cov, size=size)
+
         if verbose: print('Sampled FFs:', self.ff_floated_names, ',old mean:', self.ff_floated_mean, ', new mean:', ffmeanmod)
         return ffmeanmod
 

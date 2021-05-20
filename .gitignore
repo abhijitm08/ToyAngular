@@ -23,4 +23,6 @@ ResponseMatrix/responsematrix_pickled
 model_dependency/model_dependency_rootfiles
 model_dependency/log
 Eff/log
+ResponseMatrix/lotg
+model_dependency/plot_modeldependency
 ResponseMatrix/log

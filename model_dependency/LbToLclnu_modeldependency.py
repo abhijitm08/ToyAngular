@@ -4,9 +4,9 @@ import time, pprint
 import argparse
 import numpy as np
 import tensorflow as tf
-sys.path.append(os.path.abspath(os.getcwd()))
+sys.path.append(os.path.abspath(os.getcwd())+'/../')
 from util import LbToLclNu_Model, str2bool, Minimize
-fitdir=os.path.dirname(os.path.abspath(__file__))
+fitdir=os.path.abspath(os.getcwd())+'/..'
 home = os.getenv('HOME')
 sys.path.append(home+"/Packages/TFA2/")
 
@@ -72,7 +72,6 @@ def main():
         model.set_params_values(fit_param_vals, isfitresult = False)
         print('NLL after setting param vals: ', nll(tot_params).numpy()) 
 
-    exit(1)
     #For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
     #This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
     reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = usehesse, use_minos = useminos, use_grad = usegrad, randomiseFF = randomiseFF, get_covariance = get_covariance)
@@ -85,7 +84,7 @@ def main():
     model.write_fit_results(reslts, resfname, get_covariance = get_covariance)
 
     #plot the fit results
-    plotfname = direc+resname+'.pdf'
+    plotfname = plotdirec+resname+'.pdf'
     b_fit = b_model().numpy() #After the setting the parameter values to the estimated ones (as above), we get here the predicted shape
     if plotRes: model.plot_fitresult_binned_2D(b_data, b_fit, bin_scheme = bscheme, fname = plotfname)
     print('Final Nll:', nll(tot_params).numpy())
@@ -102,7 +101,8 @@ if __name__ == '__main__':
     parser.add_argument('-n', '--nevnts'    , dest='nevnts' ,type=int, default=int(7.5e6),help='(int) Size of the toy sample. Default is 7.5M events.')
     parser.add_argument('-nf','--nfits'     , dest='nfits'  ,type=int, default=1,help='(int) Number of fits to conduct to a given sample. Default in 1.')
     parser.add_argument('-sf','--suffix'    , dest='suffix' ,type=str, default='toy',help="(int) A unique suffix added to the name of the fit result file (*_suffix.txt) and plot file (*_suffix.pdf). Default is 'toy'.")
-    parser.add_argument('-d', '--direc'     , dest='direc'  ,type=str, default='./plots/',help='(string) Directory in which the fit result (.txt) and plot is to be saved. Default in ./plots/.')
+    parser.add_argument('-d', '--direc'     , dest='direc'  ,type=str, default='./fitresults/',help='(string) Directory in which the fit result (.txt) is saved. Default in ./fitresults/.')
+    parser.add_argument('-pd','--plotdirec' , dest='plotdirec',type=str, default='./plots/',help='(string) Directory in which the plot is to be saved. Default in ./plots/.')
     parser.add_argument('-p', '--plotRes'   , dest='plotRes',type=str2bool,default='True',help='(bool) Set to False if you do not want to plot the result. Default is True.')
     parser.add_argument('-effn', '--effn'   , dest='effn'   ,type=str2bool,default='False',help='(bool) Set to True if you want efficiency included in model. Default is False.')
     parser.add_argument('-effp', '--effpath', dest='effpath',type=str, default=fitdir+'/Eff/Eff_Tot_SM_nominal.p',help='(string) Path to efficiency file. Default is: '+fitdir+'/Eff/Eff_Tot_SM_nominal.p')
@@ -131,6 +131,7 @@ if __name__ == '__main__':
     nfits      = args.nfits
     suffix     = args.suffix
     direc      = args.direc
+    plotdirec  = args.plotdirec
     plotRes    = args.plotRes
     effn       = args.effn
     effpath    = args.effpath
@@ -153,10 +154,16 @@ if __name__ == '__main__':
     tf.config.threading.set_intra_op_parallelism_threads(cpuinter)
     tf.config.threading.set_inter_op_parallelism_threads(cpuintra)
     if not direc.endswith('/'): direc += '/'
+    if not plotdirec.endswith('/'): plotdirec += '/'
 
     #make direc if it does not exist
     if not os.path.exists(direc):
         os.system('mkdir '+direc)
+
+    if plotRes:
+        #make plotdirec if it does not exist
+        if not os.path.exists(plotdirec):
+            os.system('mkdir '+plotdirec)
 
     #if unbinned_toygen is True then make directory where toy is stored
     if unbinned_toygen:
