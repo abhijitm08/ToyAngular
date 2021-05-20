@@ -23,9 +23,9 @@ def main():
     Mlep    = 105.6583712e-3   #GeV
     model   = LbToLclNu_Model(MLb, MLc, Mlep, wc_floated_names = [floatWC], ff_floated_names = floated_FF) 
 
-    #Get a binned Model (it actually returns a function that takes no arguments, this is required by tensorflow2)
-    b_model = model.get_binned_model(bin_scheme = bscheme, applyEff = effn, applyResponse = resn, eff_fname = effpath, res_fname = respath)
-    #print(b_model())
+    #Get a binned Model one to generate (it actually returns a function that takes no arguments, this is required by tensorflow2)
+    b_model_gen = model.get_binned_model(bin_scheme = bscheme, applyEff = True, applyResponse = True, eff_fname = fitdir+'/Eff/Eff_Tot_SM_nominal.p', res_fname = fitdir+'/ResponseMatrix/responsematrix_nominal.p' )
+    #print(b_model_gen())
 
     #set the values of the parameters to the one passed in, before generating toy
     if gen_param_vals is not None:
@@ -55,12 +55,14 @@ def main():
             np.save(binnedfname, b_data)
     else:
         #Use "binned" pdf where each bin entry is sampled from a poisson distribution
-        b_data  = model.generate_binned_data(nevnts, b_model, seed = seed) 
+        b_data  = model.generate_binned_data(nevnts, b_model_gen, seed = seed) 
 
     #print('Binned data is', b_data)
 
     #Define the negative log-likilihood with/without the gaussian constrain on the floated form factors. 
     #Actually it returns a function that takes dictionary of parameters as input (a requirement by TFA2 package).
+    b_model     = model.get_binned_model(bin_scheme = bscheme, applyEff = effn, applyResponse = resn, eff_fname = effpath, res_fname = respath)
+    #print(b_model())
     nll = model.binned_nll(b_data, b_model, gauss_constraint_ff = True)
     tot_params = model.tot_params #get both fixed and floated parameter dictionary
     print('NLL: ', nll(tot_params).numpy()) #print the nll value of the model given the binned data with the parameters with which the model was created
@@ -70,6 +72,7 @@ def main():
         model.set_params_values(fit_param_vals, isfitresult = False)
         print('NLL after setting param vals: ', nll(tot_params).numpy()) 
 
+    exit(1)
     #For a given data sample (b_data) one would conduct nfits with different starting values for the free parameters and use the results of the fit that gives the least nll value.
     #This will ensure that we are converging to a global minima. The default value of nfits is 1, so for now only one fit is conducted. 
     reslts = Minimize(nll, model, tot_params, nfits = nfits, use_hesse = usehesse, use_minos = useminos, use_grad = usegrad, randomiseFF = randomiseFF, get_covariance = get_covariance)
@@ -90,7 +93,7 @@ def main():
     end = time.time(); print('Time taken in min', (end - start)/60.)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Arguments for LbToLclnu_fit_bscheme.py')
+    parser = argparse.ArgumentParser(description='Arguments for LbToLclnu_modeldependency.py')
     #required aguments
     parser.add_argument('-f', '--floatWC'   , dest='floatWC',type=str, required=True, help='(string) Name of the Wilson coefficient (WC) to be floated. Available options are [CVR,CSR,CSL,CT,None].')
     parser.add_argument('-s', '--seed'      , dest='seed'   ,type=int, required=True, help='(int) Seed for generation of fake/toy data. This should be different for each toy.')
@@ -160,5 +163,5 @@ if __name__ == '__main__':
         if not os.path.exists(direc+'toyrootfiles'):
             print('Making directory since unbinned_toygen is set to True', direc+'toyrootfiles')
             os.system('mkdir '+direc+'toyrootfiles')
-
+    
     main()
