@@ -61,9 +61,9 @@ def fill_hists(hden, hnum, hw, d_den, d_num, hdenscale = None, hnumscale = None,
             hw.SetBinError(global_bin_2D, eff_err)
 
     if effscale is not None: hw.Scale(effscale); 
-    #c3 = TCanvas("c3", "c3")
-    #hw.Draw("colz text")
-    #c3.SaveAs("eff_rootfiles/"+hw.GetName()+".pdf")
+    c3 = TCanvas("c3", "c3")
+    hw.DrawNormalized("colz text")
+    c3.SaveAs("eff_rootfiles/"+hw.GetName()+".pdf")
     print('EFFICIENCY===',hw.GetName(), (hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins()), hw.Integral()/(hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins()))
     heffavg = hw.Integral()/(hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins())
     heffmax = hw.GetMaximum()
@@ -72,8 +72,9 @@ def fill_hists(hden, hnum, hw, d_den, d_num, hdenscale = None, hnumscale = None,
     print(hw.GetName(), 'Variation of eff is :: {0:.1f} %'.format(((heffmax - heffmin)/heffavg)*100.))
     return None
 
-def GetTotEff():
+def get_tot_eff():
     print("Getting Tot eff")
+    store_root= False
     #den: nocuts
     files_den  = [basedir+'/model_dependency/model_dependency_rootfiles/LcMuNu_gen_new_SM_modeldependency.root']
     tree_den   = 'DecayTree'
@@ -146,8 +147,9 @@ def GetTotEff():
 
     return None
 
-def GetTotEff_Alternate_Model(scenario, model_indx):
+def get_tot_eff_alternate_model(scenario, model_indx):
     print("Getting Tot eff")
+    store_root= False
     #den: nocuts
     files_den  = [basedir+'/model_dependency/model_dependency_rootfiles/LcMuNu_gen_new_'+scenario+'_modeldependency.root']
     tree_den   = 'DecayTree'
@@ -222,17 +224,18 @@ def GetTotEff_Alternate_Model(scenario, model_indx):
 
 
 def main():
-    #GetTotEff()
-    GetTotEff_Alternate_Model(scenario, model_indx)
+    #get_tot_eff()
+    get_tot_eff_alternate_model(scenario, model_indx)
 
 if __name__ == '__main__':
     scenario   = sys.argv[1]
     model_indx = sys.argv[2]
     print(scenario, model_indx)
 
-    store_root= False
     scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
     if scenario not in scenarios:
         raise Exception('Scenario not in Scenarios')
 
+    gROOT.ProcessLine(".x lhcbStyle2D.C")
+    gStyle.SetPaintTextFormat("1.3f")
     main()

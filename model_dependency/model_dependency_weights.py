@@ -26,15 +26,18 @@ def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
     if scenario == 'SM': wc_name = 'None'
     model   = LbToLclNu_Model(MLb, MLc, Mlep, wc_floated_names = [wc_name], ff_floated_names = ['All'])
     
+    #for p in list(model.tot_params.values()): print(p.name, p.numpy())
     #get PDF_SM
     pdf_old = (model.get_normalised_pdf_values(phsp_arr, dict_params_pdf_old)).numpy() #.numpy() function converts tensor array to numpy array, no need for session
     #print('Old pdf vals', pdf_old)
+    #for p in list(model.tot_params.values()): print(p.name, p.numpy())
 
     #define weights for SM i.e. FF to their central values
     pdf_sm = (model.get_normalised_pdf_values(phsp_arr, {})).numpy()
     #print('SM pdf vals', pdf_old)
     df_phsp_arr['Event_FFcorr'] = pdf_sm/pdf_old
     #print('weights_sm:', df_phsp_arr['Event_FFcorr'])
+    #for p in list(model.tot_params.values()): print(p.name, p.numpy())
 
     #make different values of params according to scenario
     if scenario == 'CVR':
@@ -58,12 +61,17 @@ def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
         else:
             dict_params_pdf_new = {wc_name : new_param_val}
        
+        #for p in list(model.tot_params.values()): print(p.name, p.numpy())
         pdf_new = (model.get_normalised_pdf_values(phsp_arr, dict_params_pdf_new)).numpy()
         pdf_new = np.array(pdf_new)
         #print('New PDF vals', pdf_new)
+        #for p in list(model.tot_params.values()): print(p.name, p.numpy())
 
         #define the weights as the ratio between PDF_NP/PDF_SM
         ratio_val = (pdf_new/pdf_old)
+        #replace nans with zero.
+        ratio_val = np.where(np.isfinite(ratio_val), ratio_val, np.zeros_like(ratio_val))
+        #print(np.isnan(ratio_val).any())
         #print('PDF_NP/PDF_SM:', ratio_val)
         #add weights to the dict
         df_phsp_arr['Event_Model_'+str(i)] = ratio_val
@@ -106,12 +114,11 @@ def main():
     print(dict_params_pdf_old)
 
     #fill with weights
-    n_params = 100
     fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = n_params)
     print(df_phsp_arr)
 
     #dump the file to root
-    f_new_name = './model_dependency_rootfiles_new/'+fname.split('/')[-1]
+    f_new_name = './model_dependency_rootfiles/'+fname.split('/')[-1]
     f_new_name = f_new_name.replace('.root', '_'+scenario+'_modeldependency.root')
     print(f_new_name)
     to_root(df_phsp_arr, f_new_name, key=key, store_index=False)
@@ -173,6 +180,7 @@ if __name__ == '__main__':
     file_type  = str(sys.argv[1])
     scenario   = str(sys.argv[2])
     seed       = 100
+    n_params   = 2
 
     scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
     if scenario not in scenarios:
