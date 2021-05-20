@@ -1,4 +1,5 @@
 #!/bin/python
+
 import os
 
 fitdir    = os.path.abspath(os.getcwd())+'/'
@@ -83,7 +84,7 @@ def write_slurmscripts(commands, uniquename_suffix):
             file1.write('#SBATCH --ntasks='+numtasks+'\n')
             file1.write('#SBATCH --cpus-per-task='+numcpus+'\n')
             file1.write('#SBATCH --exclude=farm-wn[91-92]\n')
-            #file1.write('#SBATCH --mem-per-cpu=7G\n')
+            file1.write('#SBATCH --mem-per-cpu=1G\n')
             file1.write('\n')
             file1.write('cd '+fitdir+'\n')
             file1.write('source ~/farm.sh\n')
@@ -125,15 +126,15 @@ def main():
     write_slurmscripts(commands, uniquename)
 
     uniquename = 'model_nomeffFalse_nomresTrue'
-    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = True, nmodels = 20)
+    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = True, nmodels = 100)
     write_slurmscripts(commands, uniquename)
 
     uniquename = 'model_nomeffTrue_nomresFalse'
-    commands    = nonNominal_model_run(nominal_eff = True, nominal_responsematrix = False, nmodels = 20)
+    commands    = nonNominal_model_run(nominal_eff = True, nominal_responsematrix = False, nmodels = 100)
     write_slurmscripts(commands, uniquename)
 
     uniquename = 'model_nomeffFalse_nomresFalse'
-    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = False, nmodels = 20)
+    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = False, nmodels = 100)
     write_slurmscripts(commands, uniquename)
 
 if __name__ == '__main__':
