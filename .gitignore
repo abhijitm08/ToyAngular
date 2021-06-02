@@ -26,3 +26,6 @@ Eff/log
 ResponseMatrix/lotg
 model_dependency/plot_modeldependency
 ResponseMatrix/log
+Eff/eff_pickled_conservative
+ResponseMatrix/responsematrix_pickled_conservative
+model_dependency/model_dependency_rootfiles_conservative

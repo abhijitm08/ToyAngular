@@ -35,19 +35,33 @@ def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
     #define weights for SM i.e. FF to their central values
     pdf_sm = (model.get_normalised_pdf_values(phsp_arr, {})).numpy()
     #print('SM pdf vals', pdf_old)
+    ratio_ffcorr = pdf_sm/pdf_old
+    ratio_ffcorr = np.where(np.isfinite(ratio_ffcorr), ratio_ffcorr, np.zeros_like(ratio_ffcorr))
     df_phsp_arr['Event_FFcorr'] = pdf_sm/pdf_old
     #print('weights_sm:', df_phsp_arr['Event_FFcorr'])
     #for p in list(model.tot_params.values()): print(p.name, p.numpy())
 
     #make different values of params according to scenario
     if scenario == 'CVR':
-        new_param_vals = np.random.uniform(-0.020, 0.030, n_params)
+        if conservative:
+            new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
+        else:
+            new_param_vals = np.random.uniform(-0.020, 0.030, n_params)
     elif scenario == 'CSR':
-        new_param_vals = np.random.uniform(-0.460, 0.306, n_params)
+        if conservative:
+            new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
+        else:
+            new_param_vals = np.random.uniform(-0.460, 0.306, n_params)
     elif scenario == 'CSL':
-        new_param_vals = np.random.uniform(-0.490, 0.350, n_params)
+        if conservative:
+            new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
+        else:
+            new_param_vals = np.random.uniform(-0.490, 0.350, n_params)
     elif scenario == 'CT':
-        new_param_vals = np.random.uniform(-0.050, 0.050, n_params)
+        if conservative:
+            new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
+        else:
+            new_param_vals = np.random.uniform(-0.050, 0.050, n_params)
     elif scenario == 'SM':
         new_param_vals = model.sample_ff_values(seed = seed, size = n_params, verbose = False)
 
@@ -118,7 +132,11 @@ def main():
     print(df_phsp_arr)
 
     #dump the file to root
-    f_new_name = './model_dependency_rootfiles/'+fname.split('/')[-1]
+    if conservative:
+        f_new_name = './model_dependency_rootfiles_conservative/'+fname.split('/')[-1]
+    else:
+        f_new_name = './model_dependency_rootfiles/'+fname.split('/')[-1]
+
     f_new_name = f_new_name.replace('.root', '_'+scenario+'_modeldependency.root')
     print(f_new_name)
     to_root(df_phsp_arr, f_new_name, key=key, store_index=False)
@@ -177,13 +195,24 @@ def main():
 #plt.show()
 
 if __name__ == '__main__':
-    file_type  = str(sys.argv[1])
-    scenario   = str(sys.argv[2])
+    file_type  = sys.argv[1]
+    scenario   = sys.argv[2]
+    variation_range   = sys.argv[3]
     seed       = 100
-    n_params   = 2
+    n_params   = 100
+
+    conservative = None
+    if variation_range == 'large':
+        conservative = True
+    elif variation_range == 'one_sigma':
+        conservative = False
+    else:
+        raise Exception("The value of variation_range not recognised, only 'large' or 'one_sigma' allowed!")
 
     scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
     if scenario not in scenarios:
         raise Exception('Scenario not in Scenarios')
 
+    np.random.seed(seed)
+    tf.random.set_seed(seed)
     main()

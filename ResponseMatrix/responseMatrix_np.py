@@ -28,6 +28,7 @@ def get_responce_matrix():
     lget       = ['noexpand:q2_Pred/1e6', 'costhl_Pred', 'noexpand:Lb_True_Q2_mu/1e6', 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_FFcorr']
     files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_SM_modeldependency.root']
     files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_SM_modeldependency.root']
+
     df         = read_root(files_num, key='DecayTree', where=cut, columns=lget) 
     ldict      = {'q2_Pred/1e6':'q2reco', 'costhl_Pred':'cthlreco', 'Lb_True_Q2_mu/1e6':'q2true', 'Lb_True_Costhetal_mu':'cthltrue'}
     df         = df.rename(columns=ldict)
@@ -57,8 +58,7 @@ def get_responce_matrix():
     mijkl_new = mijkl_norm/nkl #convert to probability that a given true value in bin lie in each of the reco bins
     nkl_new = np.einsum('ijkl->kl', mijkl_new); print(nkl_new) #should all be one
     
-    dirstore = '.'
-    pickle.dump(mijkl_new, open(dirstore+'/responsematrix_nominal.p', 'wb'))
+    pickle.dump(mijkl_new, open('./responsematrix_nominal.p', 'wb'))
     
     ################ - set things up for plot things
     nmc_true, _ = np.histogramdd(phsp_reco_true[:,2:], bins=edges[2:], weights = weights_num)
@@ -119,7 +119,7 @@ def get_responce_matrix():
     fig.savefig('responsematrix_plots/ConvResponseMatrix_SM_nominal.pdf')
     ###############
     
-def get_responce_matrix_alternate_model(scenario, model_indx):
+def get_responce_matrix_alternate_model(scenario, model_indx, conservative):
     #define cut, bin properties 
     cut         = 'isTruth==1&&isFiducial==1&&Lb_True_Q2_mu/1e6>=0.0111640356&&Lb_True_Q2_mu/1e6<=11.109822259600001&&Lb_True_Costhetal_mu>=-1.&&Lb_True_Costhetal_mu<=1.'
     bins_reco   = [q2edges, cthledges]
@@ -129,8 +129,13 @@ def get_responce_matrix_alternate_model(scenario, model_indx):
     
     #cthl is defined here as angle bw Lc and l in w* rest frame, whereas for ourmodel it is (pi - thisangle)
     lget       = ['noexpand:q2_Pred/1e6', 'costhl_Pred', 'noexpand:Lb_True_Q2_mu/1e6', 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_Model_'+model_indx]
-    files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
-    files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+    if conservative:
+        files_num  = [basedir+'/model_dependency/model_dependency_rootfiles_conservative/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
+        files_num += [basedir+'/model_dependency/model_dependency_rootfiles_conservative/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+    else:
+        files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
+        files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+    
     df         = read_root(files_num, key='DecayTree', where=cut, columns=lget) 
     ldict      = {'q2_Pred/1e6':'q2reco', 'costhl_Pred':'cthlreco', 'Lb_True_Q2_mu/1e6':'q2true', 'Lb_True_Costhetal_mu':'cthltrue'}
     df         = df.rename(columns=ldict)
@@ -160,7 +165,11 @@ def get_responce_matrix_alternate_model(scenario, model_indx):
     mijkl_new = mijkl_norm/nkl #convert to probability that a given true value in bin lie in each of the reco bins
     nkl_new = np.einsum('ijkl->kl', mijkl_new); print(nkl_new) #should all be one
     
-    dirstore = './responsematrix_pickled'
+    if conservative:
+        dirstore = './responsematrix_pickled_conservative'
+    else:
+        dirstore = './responsematrix_pickled'
+
     pickle.dump(mijkl_new, open(dirstore+'/responsematrix_'+scenario+'_'+model_indx+'.p', 'wb'))
     
     ################ - set things up for plot things
@@ -219,7 +228,10 @@ def get_responce_matrix_alternate_model(scenario, model_indx):
     cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
     plt.subplots_adjust(hspace=0.35)
-    fig.savefig('responsematrix_plots/ConvResponseMatrix_'+scenario+'_'+model_indx+'.pdf')
+    if conservative:
+        fig.savefig('responsematrix_plots/ConvResponseMatrix_'+scenario+'_'+model_indx+'_conservative.pdf')
+    else:
+        fig.savefig('responsematrix_plots/ConvResponseMatrix_'+scenario+'_'+model_indx+'.pdf')
     ###############
     
     #################
@@ -271,12 +283,22 @@ def get_responce_matrix_alternate_model(scenario, model_indx):
 
 def main():
     #get_responce_matrix()
-    get_responce_matrix_alternate_model(scenario, model_indx)
+    get_responce_matrix_alternate_model(scenario, model_indx, conservative)
 
 if __name__ == '__main__':
     scenario   = sys.argv[1]
     model_indx = sys.argv[2]
-    print(scenario, model_indx)
+    variation_range   = sys.argv[3]
+
+    conservative = None
+    if variation_range == 'large':
+        conservative = True
+    elif variation_range == 'one_sigma':
+        conservative = False
+    else:
+        raise Exception("The value of variation_range not recognised, only 'large' or 'one_sigma' allowed!")
+
+    print(scenario, model_indx, variation_range, conservative)
 
     store_root= False
     scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']

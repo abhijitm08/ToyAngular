@@ -63,7 +63,11 @@ def fill_hists(hden, hnum, hw, d_den, d_num, hdenscale = None, hnumscale = None,
     if effscale is not None: hw.Scale(effscale); 
     c3 = TCanvas("c3", "c3")
     hw.DrawNormalized("colz text")
-    c3.SaveAs("eff_rootfiles/"+hw.GetName()+".pdf")
+    if conservative:
+        c3.SaveAs("eff_rootfiles/"+hw.GetName()+"_conservative.pdf")
+    else:
+        c3.SaveAs("eff_rootfiles/"+hw.GetName()+".pdf")
+
     print('EFFICIENCY===',hw.GetName(), (hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins()), hw.Integral()/(hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins()))
     heffavg = hw.Integral()/(hw.GetXaxis().GetNbins() * hw.GetYaxis().GetNbins())
     heffmax = hw.GetMaximum()
@@ -77,6 +81,7 @@ def get_tot_eff():
     store_root= False
     #den: nocuts
     files_den  = [basedir+'/model_dependency/model_dependency_rootfiles/LcMuNu_gen_new_SM_modeldependency.root']
+
     tree_den   = 'DecayTree'
     cut_den    = ''
     colums_den = ['Lb_True_Q2_mu' , 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_FFcorr']
@@ -97,6 +102,7 @@ def get_tot_eff():
     #num: fullselection
     files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_SM_modeldependency.root']
     files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_SM_modeldependency.root']
+
     tree_num   = 'DecayTree'
     cut_num    = 'isFullsel==1'
     colums_num = ['Lb_True_Q2_mu' , 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr', 'Event_FFcorr']
@@ -147,11 +153,15 @@ def get_tot_eff():
 
     return None
 
-def get_tot_eff_alternate_model(scenario, model_indx):
+def get_tot_eff_alternate_model(scenario, model_indx, conservative):
     print("Getting Tot eff")
     store_root= False
     #den: nocuts
-    files_den  = [basedir+'/model_dependency/model_dependency_rootfiles/LcMuNu_gen_new_'+scenario+'_modeldependency.root']
+    if conservative:
+        files_den  = [basedir+'/model_dependency/model_dependency_rootfiles_conservative/LcMuNu_gen_new_'+scenario+'_modeldependency.root']
+    else:
+        files_den  = [basedir+'/model_dependency/model_dependency_rootfiles/LcMuNu_gen_new_'+scenario+'_modeldependency.root']
+
     tree_den   = 'DecayTree'
     cut_den    = ''
     colums_den = ['Lb_True_Q2_mu' , 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_Model_'+model_indx]
@@ -170,8 +180,13 @@ def get_tot_eff_alternate_model(scenario, model_indx):
     del dfgeom_den
 
     #num: fullselection
-    files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
-    files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+    if conservative:
+        files_num  = [basedir+'/model_dependency/model_dependency_rootfiles_conservative/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
+        files_num += [basedir+'/model_dependency/model_dependency_rootfiles_conservative/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+    else:
+        files_num  = [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagDown_2016_Combine_'+scenario+'_modeldependency.root']
+        files_num += [basedir+'/model_dependency/model_dependency_rootfiles/Lb2Lcmunu_MagUp_2016_Combine_'+scenario+'_modeldependency.root']
+
     tree_num   = 'DecayTree'
     cut_num    = 'isFullsel==1'
     colums_num = ['Lb_True_Q2_mu' , 'Lb_True_Costhetal_mu', 'Event_LbProdcorr', 'Event_TrackCalibcorr', 'Event_PIDCalibEffWeight', 'Event_L0Muoncorr', 'Event_Model_'+model_indx]
@@ -187,7 +202,11 @@ def get_tot_eff_alternate_model(scenario, model_indx):
 
     if store_root:
         #make file
-        f = TFile.Open("./eff_rootfiles/Eff_Tot_"+scenario+"_"+model_indx+".root", "recreate")
+        if conservative:
+            f = TFile.Open("./eff_rootfiles/Eff_Tot_"+scenario+"_"+model_indx+"_conservative.root", "recreate")
+        else:
+            f = TFile.Open("./eff_rootfiles/Eff_Tot_"+scenario+"_"+model_indx+".root", "recreate")
+
         f.cd()
 
     #make histograms
@@ -216,7 +235,13 @@ def get_tot_eff_alternate_model(scenario, model_indx):
     
     #h_eff.Print("all")
     #print(Eff)
-    pickle.dump( Eff, open( './eff_pickled/Eff_Tot_'+scenario+'_'+model_indx+'.p', "wb" ) )
+    if conservative:
+        dirstore = './eff_pickled_conservative'
+    else:
+        dirstore = './eff_pickled'
+
+    pickle.dump( Eff, open( dirstore+'/Eff_Tot_'+scenario+'_'+model_indx+'.p', "wb" ) )
+
     if store_root:
         f.Close()
 
@@ -224,13 +249,24 @@ def get_tot_eff_alternate_model(scenario, model_indx):
 
 
 def main():
+    ##Both conservative and not conservative will give same efficiency shapes for SM
     #get_tot_eff()
-    get_tot_eff_alternate_model(scenario, model_indx)
+    get_tot_eff_alternate_model(scenario, model_indx, conservative)
 
 if __name__ == '__main__':
     scenario   = sys.argv[1]
     model_indx = sys.argv[2]
-    print(scenario, model_indx)
+    variation_range   = sys.argv[3]
+
+    conservative = None
+    if variation_range == 'large':
+        conservative = True
+    elif variation_range == 'one_sigma':
+        conservative = False
+    else:
+        raise Exception("The value of variation_range not recognised, only 'large' or 'one_sigma' allowed!")
+
+    print(scenario, model_indx, variation_range, conservative)
 
     scenarios = ['CVR', 'CSR', 'CSL', 'CT', 'SM']
     if scenario not in scenarios:
