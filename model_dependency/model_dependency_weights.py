@@ -46,22 +46,26 @@ def fill_weights(scenario, df_phsp_arr, dict_params_pdf_old, n_params = 100):
         if conservative:
             new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
         else:
-            new_param_vals = np.random.uniform(-0.020, 0.030, n_params)
+            #new_param_vals = np.random.uniform(-0.020, 0.030, n_params)
+            new_param_vals = np.random.normal(0.0, 0.030, n_params)
     elif scenario == 'CSR':
         if conservative:
             new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
         else:
-            new_param_vals = np.random.uniform(-0.460, 0.306, n_params)
+            #new_param_vals = np.random.uniform(-0.460, 0.306, n_params)
+            new_param_vals = np.random.normal(0.0, 0.460, n_params)
     elif scenario == 'CSL':
         if conservative:
             new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
         else:
-            new_param_vals = np.random.uniform(-0.490, 0.350, n_params)
+            #new_param_vals = np.random.uniform(-0.490, 0.350, n_params)
+            new_param_vals = np.random.normal(0.0, 0.490, n_params)
     elif scenario == 'CT':
         if conservative:
             new_param_vals = np.random.uniform(-1.0, 1.0, n_params)
         else:
-            new_param_vals = np.random.uniform(-0.050, 0.050, n_params)
+            #new_param_vals = np.random.uniform(-0.050, 0.050, n_params)
+            new_param_vals = np.random.normal(0.0, 0.050, n_params)
     elif scenario == 'SM':
         new_param_vals = model.sample_ff_values(seed = seed, size = n_params, verbose = False)
 

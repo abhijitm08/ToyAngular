@@ -7,7 +7,7 @@ partition = 'express'
 numnodes  = '1'
 numtasks  = '1'
 numcpus   = '1'
-ncluster  = 30
+ncluster  = 10
 
 wcnames   = ['CVR', 'CT', 'CSL', 'CSR', 'None']
 scenarios = ['CVR', 'CT', 'CSL', 'CSR', 'SM']
@@ -40,6 +40,7 @@ def make_command_nominal(wcname):
     
     suffix = wcname+'_nomeffTrue_nomresTrue'
     command += ' -sf '+suffix
+    command += ' & '
     return command
 
 def make_command(wcname, scenario, model_indx, nominal_eff, nominal_responsematrix, conservative):
@@ -104,7 +105,7 @@ def write_slurmscripts(commands, uniquename_suffix):
             file1.write('#SBATCH --cpus-per-task='+numcpus+'\n')
             file1.write('#SBATCH --exclude=farm-wn[91-92]\n')
             #file1.write('#SBATCH --mem-per-cpu=1G\n')
-            file1.write('#SBATCH --mem-per-cpu=900M\n')
+            file1.write('#SBATCH --mem-per-cpu=800M\n')
             file1.write('\n')
             file1.write('cd '+fitdir+'\n')
             file1.write('source ~/farm.sh\n')
@@ -112,6 +113,7 @@ def write_slurmscripts(commands, uniquename_suffix):
             file1.write('\n')
             file1.write(command+'\n')
             file1.write('\n')
+            file1.write('wait \n')
             file1.write('conda deactivate\n')
             file1.write('conda deactivate\n')
 
@@ -130,11 +132,11 @@ def nonNominal_model_run(nominal_eff, nominal_responsematrix, nmodels = 100, con
                 #print(indx)
                 #print(((indx+1)%ncluster == 0))
                 if ((indx+1)%ncluster == 0) or (indx == ntot):
-                    command += cmnd+'\n'
+                    command += cmnd+' & \n'
                     commands+= [command]
                     command  = ''
                 else:
-                    command += cmnd+'\n'
+                    command += cmnd+' & \n'
 
                 indx += 1
 
@@ -144,30 +146,30 @@ def nonNominal_model_run(nominal_eff, nominal_responsematrix, nmodels = 100, con
 def main():
     conservative = False
 
-    ##nominal: nomeff = True and nomresponse = True
-    #commands = []
-    #command  = ''
-    #for wcname in wcnames:
-    #    cmnd      = make_command_nominal(wcname)
-    #    command  += cmnd+'\n'
-    #commands   = [command]
-    #uniquename = 'nominal'
+    #nominal: nomeff = True and nomresponse = True
+    commands = []
+    command  = ''
+    for wcname in wcnames:
+        cmnd      = make_command_nominal(wcname)
+        command  += cmnd+'\n'
+    commands   = [command]
+    uniquename = 'nominal'
+    write_slurmscripts(commands, uniquename)
+
+    #uniquename = 'model_nomeffFalse_nomresTrue'
+    #if conservative:uniquename = 'model_nomeffFalse_nomresTrue_conservative'
+    #commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = True, nmodels = 100, conservative = conservative)
     #write_slurmscripts(commands, uniquename)
 
-    uniquename = 'model_nomeffFalse_nomresTrue'
-    if conservative:uniquename = 'model_nomeffFalse_nomresTrue_conservative'
-    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = True, nmodels = 100, conservative = conservative)
-    write_slurmscripts(commands, uniquename)
+    #uniquename = 'model_nomeffTrue_nomresFalse'
+    #if conservative: uniquename = 'model_nomeffTrue_nomresFalse_conservative'
+    #commands    = nonNominal_model_run(nominal_eff = True, nominal_responsematrix = False, nmodels = 100, conservative = conservative)
+    #write_slurmscripts(commands, uniquename)
 
-    uniquename = 'model_nomeffTrue_nomresFalse'
-    if conservative: uniquename = 'model_nomeffTrue_nomresFalse_conservative'
-    commands    = nonNominal_model_run(nominal_eff = True, nominal_responsematrix = False, nmodels = 100, conservative = conservative)
-    write_slurmscripts(commands, uniquename)
-
-    uniquename = 'model_nomeffFalse_nomresFalse'
-    if conservative: uniquename = 'model_nomeffFalse_nomresFalse_conservative'
-    commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = False, nmodels = 100, conservative = conservative)
-    write_slurmscripts(commands, uniquename)
+    #uniquename = 'model_nomeffFalse_nomresFalse'
+    #if conservative: uniquename = 'model_nomeffFalse_nomresFalse_conservative'
+    #commands    = nonNominal_model_run(nominal_eff = False, nominal_responsematrix = False, nmodels = 100, conservative = conservative)
+    #write_slurmscripts(commands, uniquename)
 
 if __name__ == '__main__':
     main()
