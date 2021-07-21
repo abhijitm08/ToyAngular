@@ -147,7 +147,6 @@ The above example will
 
 # Dependencies
 
-The scripts depending on the following packages
-
-AmpliTF: https://github.com/apoluekt/AmpliTF
-TFA2: https://github.com/apoluekt/TFA2
+The scripts depend on the following packages:
+- AmpliTF: https://github.com/apoluekt/AmpliTF
+- TFA2: https://github.com/apoluekt/TFA2
