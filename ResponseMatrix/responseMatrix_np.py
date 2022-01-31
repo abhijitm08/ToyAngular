@@ -57,6 +57,8 @@ def get_responce_matrix():
     print(nkl.sum())
     mijkl_new = mijkl_norm/nkl #convert to probability that a given true value in bin lie in each of the reco bins
     nkl_new = np.einsum('ijkl->kl', mijkl_new); print(nkl_new) #should all be one
+    print('Number of bins', np.sum(mijkl_new))
+    exit(1)
     
     pickle.dump(mijkl_new, open('./responsematrix_nominal.p', 'wb'))
     
@@ -87,21 +89,25 @@ def get_responce_matrix():
     ##############
     fig, axs = plt.subplots(2, 2)
     
+
     ax = axs[0,0]
-    c  = ax.imshow(nmc_true.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[2][0], edges[2][-1], edges[3][0], edges[3][-1]], vmin = zmin_true, vmax = zmax_true)
+    #c  = ax.imshow(nmc_true.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[2][0], edges[2][-1], edges[3][0], edges[3][-1]], vmin = zmin_true, vmax = zmax_true)
+    c  = ax.pcolormesh(np.meshgrid(q2edges, cthledges)[0], np.meshgrid(q2edges, cthledges)[1], nmc_true.T)
     ax.set_title('MC True')
     ax.set_ylabel(r'$cos(\theta_l)$')
     cbar = fig.colorbar(c, ax=ax)
     cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
     ax = axs[0,1]
-    c  = ax.imshow(nmc_reco.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]], vmin = zmin_reco, vmax = zmax_reco)
+    #c  = ax.imshow(nmc_reco.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]], vmin = zmin_reco, vmax = zmax_reco)
+    c  = ax.pcolormesh(np.meshgrid(q2edges, cthledges)[0], np.meshgrid(q2edges, cthledges)[1], nmc_reco.T)
     ax.set_title('MC Reco')
     cbar = fig.colorbar(c, ax=ax)
     cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
     ax = axs[1,0]
-    c  = ax.imshow(ntrue.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[2][0], edges[2][-1], edges[3][0], edges[3][-1]], vmin = zmin_true, vmax = zmax_true)
+    #c  = ax.imshow(ntrue.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[2][0], edges[2][-1], edges[3][0], edges[3][-1]], vmin = zmin_true, vmax = zmax_true)
+    c  = ax.pcolormesh(np.meshgrid(q2edges, cthledges)[0], np.meshgrid(q2edges, cthledges)[1], ntrue.T)
     ax.set_title('SM PDF True'); 
     ax.set_xlabel('$q^2$')
     ax.set_ylabel(r'$cos(\theta_l)$')
@@ -109,7 +115,8 @@ def get_responce_matrix():
     cbar.ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
     
     ax = axs[1,1]
-    c  = ax.imshow(nreco.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]], vmin = zmin_reco, vmax = zmax_reco)
+    #c  = ax.imshow(nreco.T, aspect = 'auto', interpolation='nearest', origin='lower', extent=[edges[0][0], edges[0][-1], edges[1][0], edges[1][-1]], vmin = zmin_reco, vmax = zmax_reco)
+    c  = ax.pcolormesh(np.meshgrid(q2edges, cthledges)[0], np.meshgrid(q2edges, cthledges)[1], nreco.T)
     ax.set_title('SM PDF Reco')
     ax.set_xlabel('$q^2$')
     cbar = fig.colorbar(c, ax=ax)
@@ -282,8 +289,8 @@ def get_responce_matrix_alternate_model(scenario, model_indx, conservative):
     ################
 
 def main():
-    #get_responce_matrix()
-    get_responce_matrix_alternate_model(scenario, model_indx, conservative)
+    get_responce_matrix()
+    #get_responce_matrix_alternate_model(scenario, model_indx, conservative)
 
 if __name__ == '__main__':
     scenario   = sys.argv[1]

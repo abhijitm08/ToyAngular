@@ -10,6 +10,16 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from root_pandas import to_root
 
+def str2bool(v):
+    """Function used in argparse"""
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def get_ylimits(cntval, cnts, lowers, uppers, factor = 1.):
     ymin        = np.min(cnts - lowers)
     ymax        = np.max(cnts + uppers)
@@ -66,6 +76,9 @@ def fill_stddevaxis(ax2, fvars2, diffsigma_val, ycenter, plottype = 'lqcd', fact
         dfm_other_lower2= np.array([diffsigma_val[k][2] for k in fvars2])
     else:
         raise Exception('Plottype not recognised')
+
+    #print('FFnames Toys_sigmastat LQCD_sigmastat')
+    #for i in range(len(fvars2)):print('{0} {1} {2}'.format(fvars2[i], dfm_err_lower2[i], dfm_other_lower2[i]))
 
     merrother = dfm_err_lower2/dfm_other_lower2
     ax2.set_ylim(get_ylimits(ycenter, merrother, np.zeros_like(merrother), np.zeros_like(merrother), factor = factor))
@@ -307,9 +320,9 @@ def main():
             tval = true_val[k.replace('_val', '')]
 
             #get difference b/w true 
-            vals = tval - df_fres[k].to_numpy()   
-            vals2= tval - df_fres_nonposdef[k].to_numpy()
-            vals3= tval - df_fres_posdef[k].to_numpy()
+            vals = df_fres[k].to_numpy()   - tval
+            vals2= df_fres_nonposdef[k].to_numpy() - tval
+            vals3= df_fres_posdef[k].to_numpy() - tval
             dx   = np.max(vals) - np.min(vals)
             xmin = np.min(vals) - dx * 0.01; 
             xmax = np.max(vals) + dx * 0.01;
@@ -572,7 +585,7 @@ def main():
     #############
 
     ############ Correlation matrix (Fit, LQCD, Toys)
-    if len(floatedvars) != 1:
+    if len(floatedvars) != 1 and get_covariance:
         df_fitcov, df_toycov = get_covmatrices(floatedvars, df_fres, getcorr = True)
         #print(df_fitcov)
         #print(df_toycov)
@@ -632,6 +645,7 @@ if __name__ == '__main__':
     parser.add_argument('-d'   , '--direc'     , dest='direc'     ,type=str,  default='./plots/', help='(string) Directory in which the fit result (.txt) is saved. Default in current directory.')
     parser.add_argument('-e'   , '--floated_FF', dest='floated_FF',nargs='+', default = ['None'], help="(list) List of form factor (FF) parameters floated in fit. See LbToLclnu_fit_binscheme.py. Default is ['None'].") 
     parser.add_argument('-sf'  , '--suffix'     , dest='suffix'    ,type=str,  default='toy'     , help="(int) A unique suffix added to the name of the fit result file (*_suffix.txt). Default is 'toy'.")
+    parser.add_argument('-cov', '--get_covariance', dest='get_covariance',type=str2bool,default='False',help='Set to True, if you want to get the covariance matrix. Default is false.')
     args       = parser.parse_args()
     floatWC    = args.floatWC
     seedmin    = args.seedmin
@@ -641,6 +655,7 @@ if __name__ == '__main__':
     suffix     = args.suffix
     direc      = args.direc
     floated_FF = args.floated_FF
+    get_covariance = args.get_covariance
     print(args)
     if not direc.endswith('/'): direc += '/'
 
@@ -650,8 +665,13 @@ if __name__ == '__main__':
     true_val["CVL"] = 0.0
     true_val["CVR"] = 0.0
     true_val["CSR"] = 0.0
-    true_val["CSL"] = 0.0
     true_val[ "CT"] = 0.0
+    true_val["CSL"] = 0.0
+    if 'NP1' in suffix:
+        true_val[floatWC] = 1.0
+    elif 'NP2' in suffix:
+        true_val[floatWC] =-1.0
+
     #FF mean values
     f = open(fitdir+'/FF_cov/LambdabLambdac_results.dat', 'r')
     for l in f.readlines(): true_val[l.split()[0]] = float(l.split()[1])

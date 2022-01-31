@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 import tensorflow as tf
 sys.path.append(os.path.abspath(os.getcwd()))
-from util import LbToLclNu_Model, str2bool, Minimize
+from util_ho import LbToLclNu_Model, str2bool, Minimize
 fitdir=os.path.dirname(os.path.abspath(__file__))
 home = os.getenv('HOME')
 sys.path.append(home+"/Packages/TFA2/")
@@ -22,10 +22,10 @@ def main():
     MLb     = 5619.49997776e-3 #GeV
     MLc     = 2286.45992749e-3 #GeV
     Mlep    = 105.6583712e-3   #GeV
-    model   = LbToLclNu_Model(MLb, MLc, Mlep, wc_floated_names = [floatWC], ff_floated_names = floated_FF) 
+    model   = LbToLclNu_Model(MLb, MLc, Mlep, wc_floated_names = [floatWC], ff_floated_names = floated_FF, get_HO_FF = True) 
 
     #Get a binned Model (it actually returns a function that takes no arguments, this is required by tensorflow2)
-    b_model = model.get_binned_model(bin_scheme = bscheme, applyEff = effn, applyResponse = resn, eff_fname = effpath, res_fname = respath)
+    b_model = model.get_binned_model_numintgl(bin_scheme = bscheme, applyEff = effn, applyResponse = resn, eff_fname = effpath, res_fname = respath)
     #print(b_model())
 
     #set the values of the parameters to the one passed in, before generating toy

@@ -227,11 +227,14 @@ def get_tot_eff_alternate_model(scenario, model_indx, conservative):
     x_nbins = h_eff.GetXaxis().GetNbins()
     y_nbins = h_eff.GetYaxis().GetNbins()
     Eff     = np.zeros(shape=(x_nbins,y_nbins))
+    EffErr  = np.zeros(shape=(x_nbins,y_nbins))
     for i in range(1,x_nbins+1): #q2[GeV]
         for j in range(1,y_nbins+1): #cthl
             global_bin_2D = h_eff.GetBin(i,j)
             eff    = h_eff.GetBinContent(global_bin_2D)
+            efferr = h_eff.GetBinError(global_bin_2D)
             Eff[i-1][j-1]    = eff 
+            EffErr[i-1][j-1] = efferr
     
     #h_eff.Print("all")
     #print(Eff)
@@ -250,8 +253,8 @@ def get_tot_eff_alternate_model(scenario, model_indx, conservative):
 
 def main():
     ##Both conservative and not conservative will give same efficiency shapes for SM
-    #get_tot_eff()
-    get_tot_eff_alternate_model(scenario, model_indx, conservative)
+    get_tot_eff()
+    #get_tot_eff_alternate_model(scenario, model_indx, conservative)
 
 if __name__ == '__main__':
     scenario   = sys.argv[1]

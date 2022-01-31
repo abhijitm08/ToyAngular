@@ -11,13 +11,13 @@ numtasks  = '1'
 numcpus   = '1'
 
 schemes  = [] 
-schemes += ['Scheme0'] 
-schemes += ['Scheme1'] 
-schemes += ['Scheme2'] 
-schemes += ['Scheme3'] 
-schemes += ['Scheme4'] 
+#schemes += ['Scheme0'] 
+#schemes += ['Scheme1'] 
+#schemes += ['Scheme2'] 
+#schemes += ['Scheme3'] 
+#schemes += ['Scheme4'] 
 schemes += ['Scheme5'] 
-schemes += ['Scheme6'] 
+#schemes += ['Scheme6'] 
 
 for scheme in schemes:
     BinScheme  = defing_binning_scheme()
@@ -25,7 +25,8 @@ for scheme in schemes:
     for binnum in range(total_bins):
         uniquename = scheme+'_'+str(binnum)
         logname    = curdir+'/log/log_'+uniquename+'.log'
-        command    = 'python Cache_Integrals.py -s '+scheme+' -b '+str(binnum)
+        #command    = 'python Cache_Integrals.py -s '+scheme+' -b '+str(binnum)
+        command    = 'python Cache_Integrals_ho.py -s '+scheme+' -b '+str(binnum)
 
         # Writing submission file
         with open('slurm_scripts/'+uniquename+'.sh', 'w') as file1:
@@ -40,7 +41,7 @@ for scheme in schemes:
             file1.write('\n')
             file1.write('cd '+curdir+'\n')
             file1.write('source ~/farm.sh\n')
-            file1.write('conda activate py3tf2\n')
+            file1.write('conda activate farmpy3tf2\n')
             file1.write('\n')
             file1.write(command+'\n')
             file1.write('\n')

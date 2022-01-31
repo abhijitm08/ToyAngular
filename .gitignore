@@ -29,3 +29,8 @@ ResponseMatrix/log
 Eff/eff_pickled_conservative
 ResponseMatrix/responsematrix_pickled_conservative
 model_dependency/model_dependency_rootfiles_conservative
+
+Eff/Eff_Tot_SM_Scheme2.p
+Eff/Eff_Tot_SM_Scheme6.p
+ResponseMatrix/responsematrix_Scheme2.p
+ResponseMatrix/responsematrix_Scheme6.p

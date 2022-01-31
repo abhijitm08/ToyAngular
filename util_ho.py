@@ -36,7 +36,7 @@ import matplotlib.gridspec as gridspec
 class LbToLclNu_Model:
     """Class that defines the Lb->Lclnu decay"""
 
-    def __init__(self, MLb, MLc, Mlep, wc_floated_names = ['CVR'], ff_floated_names = ['None']):
+    def __init__(self, MLb, MLc, Mlep, wc_floated_names = ['CVR'], ff_floated_names = ['None'], get_HO_FF = False):
         """initialise some variables"""
         #Masses of particles involved 
         self.MLb     = MLb
@@ -62,6 +62,18 @@ class LbToLclNu_Model:
         self.Tf_plus['htildeplus'] = np.power(6.276 + 6.768 - 6.276 , 2)#GeV
         self.Tf_plus['htildeperp'] = np.power(6.276 + 6.768 - 6.276 , 2)#GeV
         #print(self.Tf_plus)
+
+        #set names for higher order FF parameters
+        ho_ffs  = None
+        if get_HO_FF:
+            ho_ffs  = []     
+            ho_ffs += ['a2fplus']     
+            ho_ffs += ['a2fperp']    
+            ho_ffs += ['a2f0']      
+            ho_ffs += ['a2gplus']  
+            ho_ffs += ['a2gperp'] 
+            ho_ffs += ['a2g0']   
+        #print(ho_ffs)
         
         #Map to relate W* resonance helicity to the sign in the amplitude (used in building the amplitde)
         self.eta    = {'t': 1.,  0 : -1.,  -1: -1., 1 : -1.}
@@ -86,6 +98,9 @@ class LbToLclNu_Model:
         self.ff_mean  = {}
         f     = open(fit_dir+"/FF_cov/LambdabLambdac_results.dat", "r")
         for l in f.readlines(): self.ff_mean[l.split()[0]] = float(l.split()[1])
+        #set initial values for higher order FFs
+        if get_HO_FF: 
+            for ho_ff in ho_ffs: self.ff_mean[ho_ff] = 0.0
         f.close()
         #print(self.ff_mean)
 
@@ -95,6 +110,15 @@ class LbToLclNu_Model:
         f  = open(fit_dir+"/FF_cov/LambdabLambdac_covariance.dat", "r")
         for l in f.readlines(): self.ff_cov[l.split()[0]][l.split()[1]] = float(l.split()[2])
         f.close()
+        #set cov of zero for higher order FFs
+        if get_HO_FF: 
+            for k1 in list(self.ff_mean.keys()): 
+                for ho_ff in ho_ffs: 
+                    if ho_ff == k1:
+                        self.ff_cov[ho_ff][ho_ff] = 1.0
+                    else:
+                        self.ff_cov[ho_ff][k1] = 0.0
+                        self.ff_cov[k1][ho_ff] = 0.0
         #print(self.ff_cov)
         
         #Lists that will serve as index for incoherent sum of amplitudes (defined in units of 1/2 except for lw used in leptonic case that does not need this)
@@ -108,6 +132,7 @@ class LbToLclNu_Model:
         self.WCs  = ['V', 'A', 'S', 'PS', 'T', 'PT']
         self.FFs  = ['a0f0', 'a0fplus', 'a0fperp', 'a0g0', 'a0gplus', 'a0hplus', 'a0hperp', 'a0htildeplus']
         self.FFs += ['a1f0', 'a1fplus', 'a1fperp', 'a1g0', 'a1gplus', 'a1gperp', 'a1hplus', 'a1hperp', 'a1htildeplus', 'a1htildeperp']
+        if get_HO_FF: self.FFs += ho_ffs
         self.FFs += ['a0gperp', 'a0htildeperp']
         self.non_indp_FFs = ['a0gperp', 'a0htildeperp'] #non independent ffs
         #print(self.lws, self.WCs, self.FFs)
@@ -115,6 +140,7 @@ class LbToLclNu_Model:
         #Map defining WC -> FF (Used to turn off FF floating if WC is not floating)
         self.map_wc_ff = {}
         self.map_wc_ff['SM']   = ['a0f0', 'a0fplus', 'a0fperp', 'a1f0', 'a1fplus', 'a1fperp', 'a0g0', 'a0gplus', 'a0gperp', 'a1g0', 'a1gplus', 'a1gperp']
+        if get_HO_FF: self.map_wc_ff['SM'] += ho_ffs
         self.map_wc_ff['CVL']  = ['a0f0', 'a0fplus', 'a0fperp', 'a1f0', 'a1fplus', 'a1fperp', 'a0g0', 'a0gplus', 'a0gperp', 'a1g0', 'a1gplus', 'a1gperp']
         self.map_wc_ff['CVR']  = ['a0f0', 'a0fplus', 'a0fperp', 'a1f0', 'a1fplus', 'a1fperp', 'a0g0', 'a0gplus', 'a0gperp', 'a1g0', 'a1gplus', 'a1gperp']
         self.map_wc_ff['CSL']  = ['a0f0', 'a1f0', 'a0g0', 'a1g0']
@@ -401,11 +427,12 @@ class LbToLclNu_Model:
             zf = (atfi.sqrt(atfi.const(self.Tf_plus[ff]) - q2) - atfi.sqrt(atfi.const(self.Tf_plus[ff]) - t0))/(atfi.sqrt(atfi.const(self.Tf_plus[ff]) - q2) + atfi.sqrt(atfi.const(self.Tf_plus[ff]) - t0))
             ffterms['a0'+ff] =  cf
             ffterms['a1'+ff] =  cf * zf
+            ffterms['a2'+ff] =  cf * zf**2
     
         #define hadronic amplitudes
         Hadr = {}
         #f0 terms: contains V and S currents
-        for a in ['a0f0', 'a1f0']:
+        for a in ['a0f0', 'a1f0', 'a2f0']:
             Hadr[( 1, 1,'t', 't', 'V', a)] =  costhlchalf * aV * ffterms[a]
             Hadr[(-1,-1,'t', 't', 'V', a)] =  costhlchalf * aV * ffterms[a]
             Hadr[( 1, 1,'t', 't', 'S', a)] =  costhlchalf * aS * ffterms[a]
@@ -416,21 +443,21 @@ class LbToLclNu_Model:
             #Hadr[(-1, 1,'t', 't', 'S', a)] =  sinthlchalf * aS * ffterms[a]
         
         #fplus terms
-        for a in ['a0fplus', 'a1fplus']:
+        for a in ['a0fplus', 'a1fplus', 'a2fplus']:
             Hadr[( 1, 1,  0, 't', 'V', a)] =  costhlchalf  * bV * ffterms[a]
             Hadr[(-1,-1,  0, 't', 'V', a)] =  costhlchalf  * bV * ffterms[a]
             #Hadr[( 1,-1,  0, 't', 'V', a)] = -sinthlchalf  * bV * ffterms[a]
             #Hadr[(-1, 1,  0, 't', 'V', a)] =  sinthlchalf  * bV * ffterms[a]
         
         #fperp terms
-        for a in ['a0fperp', 'a1fperp']:
+        for a in ['a0fperp', 'a1fperp', 'a2fperp']:
             Hadr[( 1,-1, -1, 't', 'V', a)] = -costhlchalf  * cV * ffterms[a]
             Hadr[(-1, 1,  1, 't', 'V', a)] = -costhlchalf  * cV * ffterms[a]
             #Hadr[(-1,-1, -1, 't', 'V', a)] = -sinthlchalf  * cV * ffterms[a]
             #Hadr[( 1, 1,  1, 't', 'V', a)] =  sinthlchalf  * cV * ffterms[a]
         
         #g0 terms: contains A and PS currents
-        for a in ['a0g0','a1g0']:
+        for a in ['a0g0','a1g0', 'a2fperp']:
             Hadr[( 1, 1,'t', 't', 'A', a)] =  costhlchalf * aA * ffterms[a]
             Hadr[(-1,-1,'t', 't', 'A', a)] = -costhlchalf * aA * ffterms[a]
             Hadr[( 1, 1,'t', 't','PS', a)] = -costhlchalf * aP * ffterms[a]
@@ -441,14 +468,14 @@ class LbToLclNu_Model:
             #Hadr[(-1, 1,'t', 't','PS', a)] = -sinthlchalf * aP * ffterms[a]
         
         #gplus terms
-        for a in ['a0gplus','a1gplus']:
+        for a in ['a0gplus','a1gplus', 'a2gplus']:
             Hadr[( 1, 1,  0, 't', 'A', a)] =  costhlchalf * bA * ffterms[a]
             Hadr[(-1,-1,  0, 't', 'A', a)] = -costhlchalf * bA * ffterms[a]
             #Hadr[( 1,-1,  0, 't', 'A', a)] =  sinthlchalf * bA * ffterms[a]
             #Hadr[(-1, 1,  0, 't', 'A', a)] =  sinthlchalf * bA * ffterms[a]
         
         #gperp terms
-        for a in ['a0gperp','a1gperp']:
+        for a in ['a0gperp','a1gperp', 'a2gperp']:
             Hadr[( 1,-1, -1, 't', 'A', a)] =  costhlchalf * cA * ffterms[a]
             Hadr[(-1, 1,  1, 't', 'A', a)] = -costhlchalf * cA * ffterms[a]
             #Hadr[(-1,-1, -1, 't', 'A', a)] =  sinthlchalf * cA * ffterms[a]
@@ -934,6 +961,60 @@ class LbToLclNu_Model:
             return Mdl_norm
     
         return _binned_model
+
+    def get_binned_model_numintgl(self, bin_scheme = 'Scheme0', applyEff = False, applyResponse = False, 
+                                  eff_fname = fit_dir+'/responsematrix_eff/Eff.p', 
+                                  res_fname = fit_dir+'/responsematrix_eff/responsematrix.p'):
+        """Define the binned model without caching"""
+        #get binning scheme info
+        BinScheme = defing_binning_scheme()
+        nx        = len(BinScheme[bin_scheme]['qsq'])  - 1
+        ny        = len(BinScheme[bin_scheme]['cthl']) - 1
+        tot_bins  = nx * ny
+        full_range= self.phase_space.ranges #get old ranges
+
+        #get efficiency map
+        efftrue = tf.ones(shape=(nx,ny),dtype=tf.dtypes.float64) #here efficiency is uniform
+        if applyEff:
+            print('Apply eff') #shape is (nx,ny)
+            efftrue     = atfi.const(pickle.load( open( eff_fname, 'rb' ) ))
+
+        #response matrix is identity with ijkl as index where ij (reco q2 and cthl) and kl (true q2 and cthl)
+        np_mijkl = np.zeros((nx,ny,nx,ny))
+        for i in range(nx):
+            for j in range(ny):
+                np_mijkl[i][j][i][j] = 1.
+
+        mijkl = atfi.const(np_mijkl) #here reco == true
+        if applyResponse:
+            print('Apply response matrix on normalised pdf')
+            mijkl    = atfi.const(pickle.load( open( res_fname, 'rb' ))) 
+
+        @atfi.function
+        def _pdf_binned(binnum):
+            bin_name = 'Bin'+str(binnum)
+            bin_lmts = BinScheme[bin_scheme]['bin_limits'][bin_name]
+            self.phase_space.ranges = bin_lmts #set new limits for sampling
+            norm_smpl  = self.phase_space.unfiltered_sample(10000) #sample
+            self.phase_space.ranges = full_range #set back the old range
+            return self.pdf_integral(norm_smpl, ranges = bin_lmts)
+
+        #make a function to be returned
+        @atfi.function
+        def _binned_model():
+            pdf_intgs = [_pdf_binned(elem) for elem in range(tot_bins)]
+            Mdl_unnorm= tf.reshape(pdf_intgs, (nx,ny)) 
+            #fold efficiency: before normalising the pdf
+            Mdl_unnorm  *= efftrue
+            #normalise model
+            Mdl_intg     = atfi.reduce_sum(Mdl_unnorm)
+            Mdl_norm     = Mdl_unnorm/Mdl_intg
+            #fold resolution: after normalising the pdf
+            Mdl_norm     = tf.einsum('ijkl,kl->ij', mijkl, Mdl_norm) #should be normalised
+            return Mdl_norm
+    
+        return _binned_model
+
 
     def sample_ff_values(self, seed = None, verbose = True, size = 1):
         """Sample a FF value from multi-dimensional gaussian distribution whose parameters from LQCD"""
